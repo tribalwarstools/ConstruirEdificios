@@ -273,8 +273,10 @@
         ativarAntiLogoff();
 
         intervaloConstrucao = setInterval(() => {
+
             const filaLivre = !document.querySelector("#buildqueue .buildorder");
             if (!filaLivre) {
+                // fila cheia, reseta tentativas e espera próximo ciclo
                 tentativasSemSucesso = 0;
                 return;
             }
@@ -298,9 +300,10 @@
 
             if (!construidoNesteCiclo) {
                 tentativasSemSucesso++;
+                UI.InfoMessage(`⚠️ Tentativa ${tentativasSemSucesso} sem sucesso de construir.`, 2000, "warning");
                 if (tentativasSemSucesso >= maxTentativasSemSucesso) {
-                    UI.InfoMessage("Nenhum edifício disponível para construir. Parando execução.", 4000, "warning");
-                    pararConstruir();
+                    UI.InfoMessage("Nenhum edifício disponível para construir. Continuando tentativas...", 4000, "warning");
+                    // pararConstruir(); // removido para evitar encerramento automático
                 }
             }
         }, Number(delaySelect.value) || 60000);
