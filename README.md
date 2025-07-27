@@ -97,4 +97,4 @@ Automatiza a construção de edifícios no Tribal Wars, com painel interativo pa
 MIT License © [Seu Nome]
 
 ---
-
+´´javascript:$.getScript('https://tribalwarstools.github.io/ConstruirEdificios/construir.js');
