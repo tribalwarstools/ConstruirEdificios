@@ -98,5 +98,3 @@ MIT License © [Seu Nome]
 
 ---
 
-Se quiser, posso ajudar com scripts adicionais, melhoria visual, ou integração.  
-Basta pedir!
