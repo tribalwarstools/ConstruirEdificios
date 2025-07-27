@@ -73,12 +73,19 @@
         color: #6b4f2f;
         user-select: none;
     `;
-    fechar.onmouseenter = () => fechar.style.color = "#c00";
-    fechar.onmouseleave = () => fechar.style.color = "#6b4f2f";
+
     fechar.onclick = () => {
+        if (executando) {
+            alert("❗ O script está em execução. Pare a execução antes de fechar o painel.");
+            return;
+        }
         pararConstruir();
         painel.remove();
+        removerEventosAntesDeUnload();
     };
+
+    fechar.onmouseenter = () => fechar.style.color = "#c00";
+    fechar.onmouseleave = () => fechar.style.color = "#6b4f2f";
     cabecalho.appendChild(fechar);
 
     painel.appendChild(cabecalho);
@@ -96,7 +103,6 @@
 
     const listaItens = [];
 
-    // Função para criar itens
     function criarItem(cod, nome) {
         const li = document.createElement("li");
         li.draggable = true;
@@ -115,23 +121,20 @@
         `;
         li.dataset.cod = cod;
 
-        // Texto do nome
         const span = document.createElement("span");
         span.textContent = nome;
         span.style.flexGrow = "1";
         span.style.userSelect = "text";
 
-        // Checkbox ao final
         const chk = document.createElement("input");
         chk.type = "checkbox";
-        chk.checked = false; // começar desmarcado
+        chk.checked = false;
         chk.style.marginLeft = "10px";
         chk.title = "Selecionar para construção";
 
         li.appendChild(span);
         li.appendChild(chk);
 
-        // Eventos drag'n'drop
         li.addEventListener("dragstart", e => {
             e.dataTransfer.setData("text/plain", cod);
             li.style.opacity = "0.5";
@@ -162,7 +165,6 @@
         return li;
     }
 
-    // Popular lista
     for (const [cod, nome] of Object.entries(listaEdificios)) {
         const item = criarItem(cod, nome);
         listaContainer.appendChild(item);
@@ -170,7 +172,6 @@
     }
     painel.appendChild(listaContainer);
 
-    // Delay - select minutos
     const delayWrapper = document.createElement("div");
     delayWrapper.style = "margin: 12px 12px 0 12px; user-select: text;";
 
@@ -192,7 +193,6 @@
         color: #3a2e1a;
     `;
 
-    // Opções de delay em minutos até 1 hora
     const opcoesMinutos = [0.5, 1, 2, 3, 5, 10, 15, 30, 60];
     for (const min of opcoesMinutos) {
         const opt = document.createElement("option");
@@ -200,13 +200,12 @@
         opt.textContent = min === 0.5 ? "30 segundos" : `${min} minuto${min > 1 ? "s" : ""}`;
         delaySelect.appendChild(opt);
     }
-    delaySelect.value = 120000; // padrão 2 minutos
+    delaySelect.value = 120000;
 
     delayWrapper.appendChild(delayLabel);
     delayWrapper.appendChild(delaySelect);
     painel.appendChild(delayWrapper);
 
-    // Botões container
     const botoesWrapper = document.createElement("div");
     botoesWrapper.style = `
         display: flex;
@@ -215,13 +214,11 @@
         margin: 16px 12px 12px 12px;
     `;
 
-    // Botão iniciar - estilo TW
     const btnIniciar = document.createElement("button");
     btnIniciar.textContent = "▶️ Iniciar Construção";
     btnIniciar.className = "btn btn-confirm";
     btnIniciar.style.flex = "1";
 
-    // Botão parar - estilo TW
     const btnParar = document.createElement("button");
     btnParar.textContent = "⏹️ Parar";
     btnParar.className = "btn btn-cancel";
@@ -235,10 +232,8 @@
     botoesWrapper.appendChild(btnParar);
     painel.appendChild(botoesWrapper);
 
-    // Adiciona ao corpo
     document.body.appendChild(painel);
 
-    // Função para obter fila ordenada e selecionada
     function obterFilaOrdenada() {
         const fila = [];
         for (const li of listaContainer.children) {
@@ -252,6 +247,7 @@
 
     let intervaloConstrucao = null;
     let executando = false;
+    let intervaloAntiLogoff = null;
 
     const maxTentativasSemSucesso = 10;
     let tentativasSemSucesso = 0;
@@ -274,6 +270,8 @@
 
         tentativasSemSucesso = 0;
 
+        ativarAntiLogoff();
+
         intervaloConstrucao = setInterval(() => {
             const filaLivre = !document.querySelector("#buildqueue .buildorder");
             if (!filaLivre) {
@@ -284,9 +282,10 @@
             let construidoNesteCiclo = false;
 
             for (let cod of fila) {
-                const botoes = [...document.querySelectorAll(`a[id^='main_buildlink_${cod}_']`)];
+                const botoes = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
+                    .filter(b => b.offsetParent !== null && !b.classList.contains('disabled'));
 
-                const botao = botoes.find(b => b.offsetParent !== null && !b.classList.contains('disabled'));
+                const botao = botoes[0];
 
                 if (botao) {
                     botao.click();
@@ -312,18 +311,46 @@
             clearInterval(intervaloConstrucao);
             intervaloConstrucao = null;
         }
+        if (intervaloAntiLogoff) {
+            clearInterval(intervaloAntiLogoff);
+            intervaloAntiLogoff = null;
+        }
         executando = false;
         btnIniciar.disabled = false;
         btnParar.disabled = true;
         btnParar.style.opacity = "0.6";
         btnParar.style.cursor = "not-allowed";
         UI.InfoMessage("⏹️ Execução da fila de construção encerrada.", 3000, "info");
+
+        removerEventosAntesDeUnload();
     }
 
     btnIniciar.onclick = construirFila;
     btnParar.onclick = pararConstruir;
 
-    // Tornar painel arrastável pelo cabeçalho
+    function ativarAntiLogoff() {
+        if (intervaloAntiLogoff) return;
+        intervaloAntiLogoff = setInterval(() => {
+            fetch(window.location.href, { method: "GET", credentials: "same-origin" })
+                .then(() => console.log("🟢 Anti-logoff: sessão mantida"))
+                .catch(() => console.log("🔴 Anti-logoff: erro na requisição"));
+        }, 4 * 60 * 1000);
+    }
+
+    function onBeforeUnload(event) {
+        if (executando) {
+            event.preventDefault();
+            event.returnValue = "⚠️ O script está em execução. Tem certeza que deseja sair e interromper a construção?";
+            return event.returnValue;
+        }
+    }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    function removerEventosAntesDeUnload() {
+        window.removeEventListener("beforeunload", onBeforeUnload);
+    }
+
     cabecalho.onmousedown = function (e) {
         e.preventDefault();
         let shiftX = e.clientX - painel.getBoundingClientRect().left;
@@ -333,7 +360,6 @@
             let newX = pageX - shiftX;
             let newY = pageY - shiftY;
 
-            // Limitar dentro da viewport
             const maxX = window.innerWidth - painel.offsetWidth;
             const maxY = window.innerHeight - painel.offsetHeight;
             newX = Math.min(Math.max(0, newX), maxX);
@@ -341,7 +367,7 @@
 
             painel.style.left = newX + "px";
             painel.style.top = newY + "px";
-            painel.style.right = "auto"; // Para tirar o "right: 20px"
+            painel.style.right = "auto";
         }
 
         function onMouseMove(event) {
@@ -356,6 +382,5 @@
         };
     };
 
-    // Desabilitar drag nativo do cabeçalho (para não conflitar)
     cabecalho.ondragstart = () => false;
 })();
