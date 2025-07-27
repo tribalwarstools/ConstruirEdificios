@@ -26,13 +26,12 @@ Automatiza a construção de edifícios no Tribal Wars, com painel interativo pa
    ```javascript
    javascript:$.getScript('https://tribalwarstools.github.io/ConstruirEdificios/construir.js');
    ```
-5. 
-6. O painel aparecerá no canto superior direito.
-7. Marque os edifícios desejados e organize a ordem com drag and drop.
-8. Ajuste o intervalo entre tentativas.
-9. Clique em **Iniciar Construção** para ativar.
-10. Para interromper, clique em **Parar**.
-11. Não feche o painel durante a execução — um alerta aparecerá caso tente.
+4. O painel aparecerá no canto superior direito.
+5. Marque os edifícios desejados e organize a ordem com drag and drop.
+6. Ajuste o intervalo entre tentativas.
+7. Clique em **Iniciar Construção** para ativar.
+8. Para interromper, clique em **Parar**.
+9. Não feche o painel durante a execução — um alerta aparecerá caso tente.
 
 ---
 
