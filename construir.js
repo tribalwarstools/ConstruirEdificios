@@ -26,21 +26,21 @@
 
     // --- Criar painel principal ---
     const painel = document.createElement("div");
-    painel.style.position = "fixed";
-    painel.style.top = "100px";
-    painel.style.left = (window.innerWidth - 300) + "px"; // posição inicial à direita
-    painel.style.width = "280px";
-    painel.style.backgroundColor = "#f3f1e5";
-    painel.style.border = "2px solid #8b7d6b";
-    painel.style.borderRadius = "6px";
-    painel.style.boxShadow = "3px 3px 10px rgba(0,0,0,0.3)";
-    painel.style.fontFamily = "Tahoma, Verdana, Segoe, sans-serif";
-    painel.style.fontSize = "13px";
-    painel.style.color = "#3a2e1a";
-    painel.style.userSelect = "none";
-    painel.style.zIndex = "999999";
-    painel.style.right = "auto";
-    painel.style.bottom = "auto";
+    painel.style = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        width: 280px;
+        background-color: #f3f1e5; /* cor de fundo TW */
+        border: 2px solid #8b7d6b;
+        border-radius: 6px;
+        box-shadow: 3px 3px 10px rgb(0 0 0 / 0.3);
+        font-family: Tahoma, Verdana, Segoe, sans-serif;
+        font-size: 13px;
+        color: #3a2e1a;
+        user-select: none;
+        z-index: 999999;
+    `;
 
     // Cabeçalho arrastável
     const cabecalho = document.createElement("div");
@@ -62,7 +62,7 @@
     titulo.style.fontSize = "14px";
     cabecalho.appendChild(titulo);
 
-    // Botão fechar
+    // Botão fechar estilo TW (X discreto)
     const fechar = document.createElement("span");
     fechar.textContent = "✖";
     fechar.title = "Fechar painel";
@@ -96,6 +96,7 @@
 
     const listaItens = [];
 
+    // Função para criar itens
     function criarItem(cod, nome) {
         const li = document.createElement("li");
         li.draggable = true;
@@ -114,21 +115,23 @@
         `;
         li.dataset.cod = cod;
 
+        // Texto do nome
         const span = document.createElement("span");
         span.textContent = nome;
         span.style.flexGrow = "1";
         span.style.userSelect = "text";
 
+        // Checkbox ao final
         const chk = document.createElement("input");
         chk.type = "checkbox";
-        chk.checked = false;
+        chk.checked = false; // começar desmarcado
         chk.style.marginLeft = "10px";
         chk.title = "Selecionar para construção";
 
         li.appendChild(span);
         li.appendChild(chk);
 
-        // Drag'n'drop events
+        // Eventos drag'n'drop
         li.addEventListener("dragstart", e => {
             e.dataTransfer.setData("text/plain", cod);
             li.style.opacity = "0.5";
@@ -159,6 +162,7 @@
         return li;
     }
 
+    // Popular lista
     for (const [cod, nome] of Object.entries(listaEdificios)) {
         const item = criarItem(cod, nome);
         listaContainer.appendChild(item);
@@ -166,7 +170,7 @@
     }
     painel.appendChild(listaContainer);
 
-    // Delay select
+    // Delay - select minutos
     const delayWrapper = document.createElement("div");
     delayWrapper.style = "margin: 12px 12px 0 12px; user-select: text;";
 
@@ -188,14 +192,15 @@
         color: #3a2e1a;
     `;
 
-    const opcoesMinutos = [0.5, 1, 2, 3, 5, 10];
+    // Opções de delay em minutos até 1 hora
+    const opcoesMinutos = [0.5, 1, 2, 3, 5, 10, 15, 30, 60];
     for (const min of opcoesMinutos) {
         const opt = document.createElement("option");
         opt.value = min * 60 * 1000;
         opt.textContent = min === 0.5 ? "30 segundos" : `${min} minuto${min > 1 ? "s" : ""}`;
         delaySelect.appendChild(opt);
     }
-    delaySelect.value = 60000;
+    delaySelect.value = 120000; // padrão 2 minutos
 
     delayWrapper.appendChild(delayLabel);
     delayWrapper.appendChild(delaySelect);
@@ -210,11 +215,13 @@
         margin: 16px 12px 12px 12px;
     `;
 
+    // Botão iniciar - estilo TW
     const btnIniciar = document.createElement("button");
     btnIniciar.textContent = "▶️ Iniciar Construção";
     btnIniciar.className = "btn btn-confirm";
     btnIniciar.style.flex = "1";
 
+    // Botão parar - estilo TW
     const btnParar = document.createElement("button");
     btnParar.textContent = "⏹️ Parar";
     btnParar.className = "btn btn-cancel";
@@ -228,8 +235,10 @@
     botoesWrapper.appendChild(btnParar);
     painel.appendChild(botoesWrapper);
 
+    // Adiciona ao corpo
     document.body.appendChild(painel);
 
+    // Função para obter fila ordenada e selecionada
     function obterFilaOrdenada() {
         const fila = [];
         for (const li of listaContainer.children) {
@@ -243,6 +252,9 @@
 
     let intervaloConstrucao = null;
     let executando = false;
+
+    const maxTentativasSemSucesso = 10;
+    let tentativasSemSucesso = 0;
 
     function construirFila() {
         if (executando) return;
@@ -260,8 +272,7 @@
         btnParar.style.cursor = "pointer";
         executando = true;
 
-        let tentativasSemSucesso = 0;
-        const maxTentativasSemSucesso = 3;
+        tentativasSemSucesso = 0;
 
         intervaloConstrucao = setInterval(() => {
             const filaLivre = !document.querySelector("#buildqueue .buildorder");
@@ -312,40 +323,39 @@
     btnIniciar.onclick = construirFila;
     btnParar.onclick = pararConstruir;
 
-    // ARRASTAR: correção usando clientX/clientY e remover listeners apropriadamente
+    // Tornar painel arrastável pelo cabeçalho
     cabecalho.onmousedown = function (e) {
         e.preventDefault();
+        let shiftX = e.clientX - painel.getBoundingClientRect().left;
+        let shiftY = e.clientY - painel.getBoundingClientRect().top;
 
-        const painelRect = painel.getBoundingClientRect();
-        const shiftX = e.clientX - painelRect.left;
-        const shiftY = e.clientY - painelRect.top;
-
-        function onMouseMove(event) {
-            let newX = event.clientX - shiftX;
-            let newY = event.clientY - shiftY;
+        function moveAt(pageX, pageY) {
+            let newX = pageX - shiftX;
+            let newY = pageY - shiftY;
 
             // Limitar dentro da viewport
             const maxX = window.innerWidth - painel.offsetWidth;
             const maxY = window.innerHeight - painel.offsetHeight;
-
             newX = Math.min(Math.max(0, newX), maxX);
             newY = Math.min(Math.max(0, newY), maxY);
 
             painel.style.left = newX + "px";
             painel.style.top = newY + "px";
-            painel.style.right = "auto";
-            painel.style.bottom = "auto";
+            painel.style.right = "auto"; // Para tirar o "right: 20px"
         }
 
-        function onMouseUp() {
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
+        function onMouseMove(event) {
+            moveAt(event.pageX, event.pageY);
         }
 
         document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
+
+        document.onmouseup = function () {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.onmouseup = null;
+        };
     };
 
-    // Desabilitar drag nativo do cabeçalho para evitar conflitos
+    // Desabilitar drag nativo do cabeçalho (para não conflitar)
     cabecalho.ondragstart = () => false;
 })();
