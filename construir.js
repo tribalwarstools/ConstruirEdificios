@@ -242,13 +242,25 @@
     };
     painel.appendChild(btnSalvarConfig);
 
-    // Contador de edifícios
-    const contador = document.createElement("div");
-    contador.style = "margin: 6px 12px; font-weight: bold; text-align: center; color: #3a2e1a;";
-    painel.appendChild(contador);
+    // Contadores
+    const contadorRealFila = document.createElement("div");
+    contadorRealFila.style = "margin: 6px 12px; font-weight: bold; text-align: center; color: #3a2e1a;";
+    painel.appendChild(contadorRealFila);
+
+    const contadorMarcados = document.createElement("div");
+    contadorMarcados.style = "margin: 6px 12px; font-weight: bold; text-align: center; color: #3a2e1a;";
+    painel.appendChild(contadorMarcados);
+
     function atualizarContadorFila() {
+        // Contagem real pela fila do jogo
+        const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
+        const contagemReal = botoesCancelar.length;
+
+        // Contagem dos itens marcados no painel
         const marcados = listaItens.filter(li => li.querySelector("input").checked).length;
-        contador.textContent = `✅ Marcados para construir: ${marcados}`;
+
+        contadorRealFila.textContent = `🏗️ Construções na fila: ${contagemReal}`;
+        contadorMarcados.textContent = `✅ Itens marcados: ${marcados}`;
     }
 
     const botoesWrapper = document.createElement("div");
@@ -310,7 +322,8 @@
         tentativasSemSucesso = 0;
 
         intervaloConstrucao = setInterval(() => {
-            const filaCheia = document.querySelectorAll("#buildqueue .buildorder").length >= 5;
+            const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
+            const filaCheia = botoesCancelar.length >= 5;
             if (filaCheia) return;
 
             let construido = false;
@@ -343,7 +356,11 @@
                     UI.InfoMessage("Nenhum edifício disponível para construir. Continuando tentativas...", 4000, "warning");
                 }
             }
+
+            atualizarContadorFila();
         }, Number(delaySelect.value) || 60000);
+
+        atualizarContadorFila();
     }
 
     function pararConstruir() {
@@ -358,6 +375,7 @@
         btnParar.style.cursor = "not-allowed";
         UI.InfoMessage("⏹️ Execução da fila de construção encerrada.", 3000, "info");
         removerEventosAntesDeUnload();
+        atualizarContadorFila();
     }
 
     btnIniciar.onclick = construirFila;
