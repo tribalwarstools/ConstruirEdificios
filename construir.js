@@ -271,7 +271,7 @@
         margin: 16px 12px 12px 12px;
     `;
     const btnIniciar = document.createElement("button");
-    btnIniciar.textContent = "▶️ Iniciar Construção";
+    btnIniciar.textContent = "▶️ Iniciar";
     btnIniciar.className = "btn btn-confirm-yes";
     btnIniciar.style.flex = "1";
 
