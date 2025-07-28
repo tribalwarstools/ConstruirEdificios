@@ -1,3 +1,15 @@
+# 🛠️ Script de Construção Automática para Tribal Wars
+
+Este script facilita e automatiza a fila de construções no jogo **Tribal Wars**, diretamente na tela de construções (`screen=main`). Com um **painel flutuante interativo**, você pode escolher quais edifícios deseja construir, definir a ordem, ajustar o intervalo entre construções e deixar que o script trabalhe por você.
+
+## 🚀 Como Usar
+
+### ✅ Opção 1: Atalho nos Favoritos (Bookmarklet)
+
+1. Copie o código do script completo (`construirAuto.js`).
+2. Crie um novo favorito no navegador.
+3. No campo de **URL** do favorito, insira:
+javascript:(function(){/Cole o script aqui entre os parênteses/})();
 4. Salve. Com o jogo aberto na aba `screen=main`, clique no favorito para abrir o painel.
 
 > 💡 Dica: Você pode hospedar o script externamente (ex: GitHub Pages) e usar:
