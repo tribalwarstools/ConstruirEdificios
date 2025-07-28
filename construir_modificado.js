@@ -335,7 +335,7 @@
     if (window.antiLogoffRobustoAtivo) return;
 
     const script = document.createElement("script");
-    script.src = "https://raw.githubusercontent.com/giovaniguedes/scripts-tribal/main/antiLogoffRobusto.js";
+    script.src = "https://raw.githubusercontent.com/tribalwarstools/ConstruirEdificios/main/antiLogoffRobusto.js";
     script.onload = () => {
         console.log("🟢 Script anti-logoff robusto carregado.");
     };
