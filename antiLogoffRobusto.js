@@ -14,9 +14,12 @@
   painel.style.userSelect = 'none';
   painel.style.width = '220px';
   painel.style.textAlign = 'center';
+  painel.style.cursor = 'default';
 
   painel.innerHTML = `
-    <div style="margin-bottom:8px; font-weight:bold;">Anti-Logoff Robusto</div>
+    <div id="painelTitulo" style="font-weight:bold; margin-bottom:8px; cursor:move; user-select:none;">
+      Anti-Logoff Robusto
+    </div>
     <button id="btnIniciar" style="width:90px; margin-right:10px; padding:5px;">Iniciar</button>
     <button id="btnParar" style="width:90px; padding:5px;">Parar</button>
     <div id="status" style="margin-top:10px; font-size:14px; color:#0f0;">Inativo</div>
@@ -24,7 +27,7 @@
 
   document.body.appendChild(painel);
 
-  // Função anti-logoff (mesmo código seu, com pequenas adaptações)
+  // Função anti-logoff (seu código)
   function iniciarAntiLogoffRobusto() {
     if (window.antiLogoffRobustoAtivo) {
       console.log("✅ Anti-logoff já está ativo.");
@@ -64,7 +67,6 @@
     console.log("❌ Anti-logoff desativado.");
   }
 
-  // Atualiza status visual
   function atualizarStatus() {
     const statusEl = painel.querySelector('#status');
     if (window.antiLogoffRobustoAtivo) {
@@ -90,10 +92,49 @@
     atualizarStatus();
   });
 
-  // Status inicial
   atualizarStatus();
 
-  // Para facilitar, adiciona controle global pelo console, se quiser:
+  // Função para tornar o painel arrastável pelo título
+  const painelTitulo = painel.querySelector('#painelTitulo');
+  let offsetX, offsetY, isDragging = false;
+
+  painelTitulo.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    // Posições relativas ao painel
+    const rect = painel.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    painel.style.transition = 'none'; // para evitar transição durante drag
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    // Calcula nova posição fixa dentro da janela
+    let left = e.clientX - offsetX;
+    let top = e.clientY - offsetY;
+
+    // Limita para não sair da tela
+    const maxLeft = window.innerWidth - painel.offsetWidth;
+    const maxTop = window.innerHeight - painel.offsetHeight;
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (left > maxLeft) left = maxLeft;
+    if (top > maxTop) top = maxTop;
+
+    painel.style.left = left + 'px';
+    painel.style.top = top + 'px';
+    painel.style.right = 'auto';
+    painel.style.bottom = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      painel.style.transition = ''; // volta transição normal
+    }
+  });
+
+  // Adiciona global para console, se quiser
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 
