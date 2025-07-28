@@ -12,17 +12,41 @@
   painel.style.fontFamily = 'Arial, sans-serif';
   painel.style.zIndex = 99999;
   painel.style.userSelect = 'none';
-  painel.style.width = '220px';
+  painel.style.width = '240px';
   painel.style.textAlign = 'center';
   painel.style.cursor = 'default';
 
   painel.innerHTML = `
-    <div id="painelTitulo" style="font-weight:bold; margin-bottom:8px; cursor:move; user-select:none;">
+    <div id="painelTitulo" style="font-weight:bold; margin-bottom:10px; cursor:move; user-select:none;">
       Anti-Logoff Robusto
     </div>
-    <button id="btnIniciar" style="width:90px; margin-right:10px; padding:5px;">Iniciar</button>
-    <button id="btnParar" style="width:90px; padding:5px;">Parar</button>
-    <div id="status" style="margin-top:10px; font-size:14px; color:#0f0;">Inativo</div>
+    <div style="display: flex; justify-content: center; gap: 12px;">
+      <button id="btnIniciar" style="
+        flex: 1;
+        padding: 8px 0;
+        border: none;
+        border-radius: 6px;
+        background-color: #28a745;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(40,167,69,0.6);
+        transition: background-color 0.3s ease;
+      ">Iniciar</button>
+      <button id="btnParar" style="
+        flex: 1;
+        padding: 8px 0;
+        border: none;
+        border-radius: 6px;
+        background-color: #dc3545;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(220,53,69,0.6);
+        transition: background-color 0.3s ease;
+      ">Parar</button>
+    </div>
+    <div id="status" style="margin-top:12px; font-size:14px; color:#0f0; user-select:none; min-height:18px;">Inativo</div>
   `;
 
   document.body.appendChild(painel);
@@ -92,6 +116,13 @@
     atualizarStatus();
   });
 
+  // Hover efeitos
+  btnIniciar.addEventListener('mouseenter', () => btnIniciar.style.backgroundColor = '#218838');
+  btnIniciar.addEventListener('mouseleave', () => btnIniciar.style.backgroundColor = '#28a745');
+
+  btnParar.addEventListener('mouseenter', () => btnParar.style.backgroundColor = '#c82333');
+  btnParar.addEventListener('mouseleave', () => btnParar.style.backgroundColor = '#dc3545');
+
   atualizarStatus();
 
   // Função para tornar o painel arrastável pelo título
@@ -100,16 +131,14 @@
 
   painelTitulo.addEventListener('mousedown', (e) => {
     isDragging = true;
-    // Posições relativas ao painel
     const rect = painel.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
-    painel.style.transition = 'none'; // para evitar transição durante drag
+    painel.style.transition = 'none';
   });
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
-    // Calcula nova posição fixa dentro da janela
     let left = e.clientX - offsetX;
     let top = e.clientY - offsetY;
 
@@ -130,11 +159,11 @@
   document.addEventListener('mouseup', () => {
     if (isDragging) {
       isDragging = false;
-      painel.style.transition = ''; // volta transição normal
+      painel.style.transition = '';
     }
   });
 
-  // Adiciona global para console, se quiser
+  // Para controle via console, se quiser
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 
