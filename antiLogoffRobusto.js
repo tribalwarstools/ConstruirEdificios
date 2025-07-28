@@ -51,7 +51,6 @@
 
   document.body.appendChild(painel);
 
-  // Função anti-logoff (seu código)
   function iniciarAntiLogoffRobusto() {
     if (window.antiLogoffRobustoAtivo) {
       console.log("✅ Anti-logoff já está ativo.");
@@ -93,16 +92,34 @@
 
   function atualizarStatus() {
     const statusEl = painel.querySelector('#status');
+    const btnIniciar = painel.querySelector('#btnIniciar');
+    const btnParar = painel.querySelector('#btnParar');
+
     if (window.antiLogoffRobustoAtivo) {
       statusEl.textContent = "Ativo 🟢";
       statusEl.style.color = "#0f0";
+
+      btnIniciar.disabled = true;
+      btnIniciar.style.cursor = 'not-allowed';
+      btnIniciar.style.opacity = '0.6';
+
+      btnParar.disabled = false;
+      btnParar.style.cursor = 'pointer';
+      btnParar.style.opacity = '1';
     } else {
       statusEl.textContent = "Inativo 🔴";
       statusEl.style.color = "#f33";
+
+      btnIniciar.disabled = false;
+      btnIniciar.style.cursor = 'pointer';
+      btnIniciar.style.opacity = '1';
+
+      btnParar.disabled = true;
+      btnParar.style.cursor = 'not-allowed';
+      btnParar.style.opacity = '0.6';
     }
   }
 
-  // Botões
   const btnIniciar = painel.querySelector('#btnIniciar');
   const btnParar = painel.querySelector('#btnParar');
 
@@ -116,12 +133,20 @@
     atualizarStatus();
   });
 
-  // Hover efeitos
-  btnIniciar.addEventListener('mouseenter', () => btnIniciar.style.backgroundColor = '#218838');
-  btnIniciar.addEventListener('mouseleave', () => btnIniciar.style.backgroundColor = '#28a745');
+  // Hover efeitos só se botão habilitado
+  btnIniciar.addEventListener('mouseenter', () => {
+    if (!btnIniciar.disabled) btnIniciar.style.backgroundColor = '#218838';
+  });
+  btnIniciar.addEventListener('mouseleave', () => {
+    if (!btnIniciar.disabled) btnIniciar.style.backgroundColor = '#28a745';
+  });
 
-  btnParar.addEventListener('mouseenter', () => btnParar.style.backgroundColor = '#c82333');
-  btnParar.addEventListener('mouseleave', () => btnParar.style.backgroundColor = '#dc3545');
+  btnParar.addEventListener('mouseenter', () => {
+    if (!btnParar.disabled) btnParar.style.backgroundColor = '#c82333';
+  });
+  btnParar.addEventListener('mouseleave', () => {
+    if (!btnParar.disabled) btnParar.style.backgroundColor = '#dc3545';
+  });
 
   atualizarStatus();
 
@@ -142,7 +167,6 @@
     let left = e.clientX - offsetX;
     let top = e.clientY - offsetY;
 
-    // Limita para não sair da tela
     const maxLeft = window.innerWidth - painel.offsetWidth;
     const maxTop = window.innerHeight - painel.offsetHeight;
     if (left < 0) left = 0;
@@ -163,7 +187,7 @@
     }
   });
 
-  // Para controle via console, se quiser
+  // Controle global para console
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 
