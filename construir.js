@@ -272,12 +272,12 @@
     `;
     const btnIniciar = document.createElement("button");
     btnIniciar.textContent = "▶️ Iniciar Construção";
-    btnIniciar.className = "btn btn-confirm";
+    btnIniciar.className = "btn btn-confirm-yes";
     btnIniciar.style.flex = "1";
 
     const btnParar = document.createElement("button");
     btnParar.textContent = "⏹️ Parar";
-    btnParar.className = "btn btn-cancel";
+    btnParar.className = "btn btn-confirm-no";
     btnParar.style.flex = "1";
     btnParar.disabled = true;
     btnParar.style.opacity = "0.6";
