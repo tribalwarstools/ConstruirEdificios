@@ -224,6 +224,10 @@
     }
     delayWrapper.appendChild(delayLabel);
     delayWrapper.appendChild(delaySelect);
+    const contadorRegressivo = document.createElement("div");
+    contadorRegressivo.style = "text-align: center; font-weight: bold; margin-top: 6px; color: #3a2e1a;";
+    delayWrapper.appendChild(contadorRegressivo);
+
     painel.appendChild(delayWrapper);
 
     // Botão salvar configuração
@@ -321,7 +325,8 @@
         executando = true;
         tentativasSemSucesso = 0;
 
-        intervaloConstrucao = setInterval(() => {
+                intervaloConstrucao = setInterval(() => {
+            iniciarContadorRegressivo();
             const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
             const filaCheia = botoesCancelar.length >= 5;
             if (filaCheia) return;
@@ -466,6 +471,31 @@
         }
     }
 
+    
+    let tempoRestante = Number(delaySelect.value) || 60000;
+    let intervaloRegressivo = null;
+
+    function iniciarContadorRegressivo() {
+        clearInterval(intervaloRegressivo);
+        tempoRestante = Number(delaySelect.value);
+        atualizarContador();
+        intervaloRegressivo = setInterval(() => {
+            tempoRestante -= 1000;
+            if (tempoRestante <= 0) {
+                clearInterval(intervaloRegressivo);
+            }
+            atualizarContador();
+        }, 1000);
+    }
+
+    function atualizarContador() {
+        const segundos = Math.max(0, Math.floor(tempoRestante / 1000));
+        contadorRegressivo.textContent = `⏳ Próxima checagem em: ${segundos}s`;
+    }
+
+    delaySelect.addEventListener("change", iniciarContadorRegressivo);
+
+    iniciarContadorRegressivo();
     carregarConfiguracao();
 
 })();
