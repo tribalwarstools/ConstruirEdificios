@@ -310,7 +310,11 @@
     function executarConstrucao() {
         const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
         const filaCheia = botoesCancelar.length >= 5;
-        if (filaCheia) return;
+        if (filaCheia) {
+		UI.InfoMessage("⛔ A fila de construção já possui 5 edifícios. Aguardando espaço...", 3000, "warning");
+		return;
+	}
+
 
         let construido = false;
         const filaAtualizada = obterFilaOrdenada();
