@@ -326,7 +326,7 @@
         tentativasSemSucesso = 0;
 
                 intervaloConstrucao = setInterval(() => {
-            iniciarContadorRegressivo();
+            
             const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
             const filaCheia = botoesCancelar.length >= 5;
             if (filaCheia) return;
@@ -380,10 +380,20 @@
         btnParar.style.cursor = "not-allowed";
         UI.InfoMessage("⏹️ Execução da fila de construção encerrada.", 3000, "info");
         removerEventosAntesDeUnload();
+		// Parar o contador regressivo também
+		clearInterval(intervaloRegressivo);
+		tempoRestante = 0;
+		atualizarContador();
+
         atualizarContadorFila();
     }
 
-    btnIniciar.onclick = construirFila;
+	btnIniciar.onclick = () => {
+		iniciarContadorRegressivo();
+		window.addEventListener("beforeunload", onBeforeUnload);
+		construirFila();
+	};
+
     btnParar.onclick = pararConstruir;
 
     function onBeforeUnload(event) {
@@ -493,9 +503,12 @@
         contadorRegressivo.textContent = `⏳ Próxima checagem em: ${segundos}s`;
     }
 
-    delaySelect.addEventListener("change", iniciarContadorRegressivo);
+    delaySelect.addEventListener("change", () => {
+    if (executando) iniciarContadorRegressivo();
+});
 
-    iniciarContadorRegressivo();
+
+    
     carregarConfiguracao();
 
 })();
