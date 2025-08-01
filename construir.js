@@ -256,11 +256,8 @@
     painel.appendChild(contadorMarcados);
 
     function atualizarContadorFila() {
-        // Contagem real pela fila do jogo
         const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
         const contagemReal = botoesCancelar.length;
-
-        // Contagem dos itens marcados no painel
         const marcados = listaItens.filter(li => li.querySelector("input").checked).length;
 
         contadorRealFila.textContent = `🏗️ Construções na fila: ${contagemReal}`;
@@ -309,7 +306,47 @@
     const maxTentativasSemSucesso = 10;
     let tentativasSemSucesso = 0;
 
-    function construirFila() {
+    // Função com a lógica do que será feito a cada intervalo
+    function executarConstrucao() {
+        const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
+        const filaCheia = botoesCancelar.length >= 5;
+        if (filaCheia) return;
+
+        let construido = false;
+        const filaAtualizada = obterFilaOrdenada();
+
+        if(filaAtualizada.length === 0) {
+            UI.InfoMessage("Nenhum edifício marcado para construir. Parando execução.", 3000, "warning");
+            pararConstruir();
+            return;
+        }
+
+        for (let cod of filaAtualizada) {
+            const botoes = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
+                .filter(b => b.offsetParent !== null && !b.classList.contains('disabled'));
+
+            const botao = botoes[0];
+            if (botao) {
+                botao.click();
+                UI.InfoMessage(`✅ Construção de "${listaEdificios[cod]}" iniciada!`, 3000, "success");
+                construido = true;
+                tentativasSemSucesso = 0;
+                break;
+            }
+        }
+
+        if (!construido) {
+            tentativasSemSucesso++;
+            UI.InfoMessage(`⚠️ Tentativa ${tentativasSemSucesso} sem sucesso de construir.`, 2000, "warning");
+            if (tentativasSemSucesso >= maxTentativasSemSucesso) {
+                UI.InfoMessage("Nenhum edifício disponível para construir. Continuando tentativas...", 4000, "warning");
+            }
+        }
+
+        atualizarContadorFila();
+    }
+
+    function iniciarExecucao() {
         if (executando) return;
 
         const fila = obterFilaOrdenada();
@@ -325,47 +362,10 @@
         executando = true;
         tentativasSemSucesso = 0;
 
-        intervaloConstrucao = setInterval(() => {
-            
-            const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
-            const filaCheia = botoesCancelar.length >= 5;
-            if (filaCheia) return;
-
-            let construido = false;
-            const filaAtualizada = obterFilaOrdenada();
-
-            if(filaAtualizada.length === 0) {
-                UI.InfoMessage("Nenhum edifício marcado para construir. Parando execução.", 3000, "warning");
-                pararConstruir();
-                return;
-            }
-
-            for (let cod of filaAtualizada) {
-                const botoes = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
-                    .filter(b => b.offsetParent !== null && !b.classList.contains('disabled'));
-
-                const botao = botoes[0];
-                if (botao) {
-                    botao.click();
-                    UI.InfoMessage(`✅ Construção de "${listaEdificios[cod]}" iniciada!`, 3000, "success");
-                    construido = true;
-                    tentativasSemSucesso = 0;
-                    break;
-                }
-            }
-
-            if (!construido) {
-                tentativasSemSucesso++;
-                UI.InfoMessage(`⚠️ Tentativa ${tentativasSemSucesso} sem sucesso de construir.`, 2000, "warning");
-                if (tentativasSemSucesso >= maxTentativasSemSucesso) {
-                    UI.InfoMessage("Nenhum edifício disponível para construir. Continuando tentativas...", 4000, "warning");
-                }
-            }
-
-            atualizarContadorFila();
-        }, Number(delaySelect.value) || 60000);
-
+        intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value) || 60000);
         atualizarContadorFila();
+        iniciarContadorRegressivo();
+        window.addEventListener("beforeunload", onBeforeUnload);
     }
 
     function pararConstruir() {
@@ -380,20 +380,13 @@
         btnParar.style.cursor = "not-allowed";
         UI.InfoMessage("⏹️ Execução da fila de construção encerrada.", 3000, "info");
         removerEventosAntesDeUnload();
-		// Parar o contador regressivo também
-		clearInterval(intervaloRegressivo);
-		tempoRestante = 0;
-		atualizarContador();
-
+        clearInterval(intervaloRegressivo);
+        tempoRestante = 0;
+        atualizarContador();
         atualizarContadorFila();
     }
 
-	btnIniciar.onclick = () => {
-		iniciarContadorRegressivo();
-		window.addEventListener("beforeunload", onBeforeUnload);
-		construirFila();
-	};
-
+    btnIniciar.onclick = iniciarExecucao;
     btnParar.onclick = pararConstruir;
 
     function onBeforeUnload(event) {
@@ -481,23 +474,21 @@
         }
     }
 
-    
     let tempoRestante = Number(delaySelect.value) || 60000;
     let intervaloRegressivo = null;
 
-	function iniciarContadorRegressivo() {
-		clearInterval(intervaloRegressivo);
-		tempoRestante = Number(delaySelect.value);
-		atualizarContador();
-		intervaloRegressivo = setInterval(() => {
-			tempoRestante -= 1000;
-			if (tempoRestante <= 0) {
-				tempoRestante = Number(delaySelect.value); // reinicia o contador
-			}
-			atualizarContador();
-		}, 1000);
-	}
-
+    function iniciarContadorRegressivo() {
+        clearInterval(intervaloRegressivo);
+        tempoRestante = Number(delaySelect.value);
+        atualizarContador();
+        intervaloRegressivo = setInterval(() => {
+            tempoRestante -= 1000;
+            if (tempoRestante <= 0) {
+                tempoRestante = Number(delaySelect.value); // reinicia o contador
+            }
+            atualizarContador();
+        }, 1000);
+    }
 
     function atualizarContador() {
         const segundos = Math.max(0, Math.floor(tempoRestante / 1000));
@@ -505,11 +496,13 @@
     }
 
     delaySelect.addEventListener("change", () => {
-    if (executando) iniciarContadorRegressivo();
-});
+        if (executando) {
+            clearInterval(intervaloConstrucao);
+            intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value));
+            iniciarContadorRegressivo();
+        }
+    });
 
-
-    
     carregarConfiguracao();
 
 })();
