@@ -325,7 +325,7 @@
         executando = true;
         tentativasSemSucesso = 0;
 
-                intervaloConstrucao = setInterval(() => {
+        intervaloConstrucao = setInterval(() => {
             
             const botoesCancelar = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel"));
             const filaCheia = botoesCancelar.length >= 5;
@@ -485,18 +485,19 @@
     let tempoRestante = Number(delaySelect.value) || 60000;
     let intervaloRegressivo = null;
 
-    function iniciarContadorRegressivo() {
-        clearInterval(intervaloRegressivo);
-        tempoRestante = Number(delaySelect.value);
-        atualizarContador();
-        intervaloRegressivo = setInterval(() => {
-            tempoRestante -= 1000;
-            if (tempoRestante <= 0) {
-                clearInterval(intervaloRegressivo);
-            }
-            atualizarContador();
-        }, 1000);
-    }
+	function iniciarContadorRegressivo() {
+		clearInterval(intervaloRegressivo);
+		tempoRestante = Number(delaySelect.value);
+		atualizarContador();
+		intervaloRegressivo = setInterval(() => {
+			tempoRestante -= 1000;
+			if (tempoRestante <= 0) {
+				tempoRestante = Number(delaySelect.value); // reinicia o contador
+			}
+			atualizarContador();
+		}, 1000);
+	}
+
 
     function atualizarContador() {
         const segundos = Math.max(0, Math.floor(tempoRestante / 1000));
