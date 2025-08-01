@@ -495,13 +495,22 @@
         contadorRegressivo.textContent = `⏳ Próxima checagem em: ${segundos}s`;
     }
 
-    delaySelect.addEventListener("change", () => {
-        if (executando) {
-            clearInterval(intervaloConstrucao);
-            intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value));
-            iniciarContadorRegressivo();
-        }
-    });
+delaySelect.addEventListener("change", () => {
+    if (executando) {
+        clearInterval(intervaloConstrucao); // Encerra o intervalo anterior
+
+        const novoDelay = Number(delaySelect.value);
+
+        // Cria novo intervalo com o novo tempo configurado
+        intervaloConstrucao = setInterval(() => {
+            executarConstrucao(); // Correção aqui
+        }, novoDelay);
+
+        iniciarContadorRegressivo(); // reinicia o cronômetro visual
+    }
+});
+
+
 
     carregarConfiguracao();
 
