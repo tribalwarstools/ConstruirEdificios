@@ -499,20 +499,25 @@
         contadorRegressivo.textContent = `⏳ Próxima checagem em: ${segundos}s`;
     }
 
-delaySelect.addEventListener("change", () => {
-    if (executando) {
-        clearInterval(intervaloConstrucao); // Encerra o intervalo anterior
+	delaySelect.addEventListener("change", () => {
+		if (executando) {
+			clearInterval(intervaloConstrucao); // Encerra o intervalo atual
 
-        const novoDelay = Number(delaySelect.value);
+			const novoDelay = Number(delaySelect.value);
 
-        // Cria novo intervalo com o novo tempo configurado
-        intervaloConstrucao = setInterval(() => {
-            executarConstrucao(); // Correção aqui
-        }, novoDelay);
+			// Executa imediatamente uma tentativa de construção
+			executarConstrucao();
 
-        iniciarContadorRegressivo(); // reinicia o cronômetro visual
-    }
-});
+			// Inicia novo intervalo com novo delay
+			intervaloConstrucao = setInterval(() => {
+				executarConstrucao();
+			}, novoDelay);
+
+			// Reinicia o cronômetro visual
+			iniciarContadorRegressivo();
+		}
+	});
+
 
 
 
