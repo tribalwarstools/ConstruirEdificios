@@ -1,5 +1,5 @@
 (function() {
-  // Cria estilo CSS
+  // Estilo CSS
   const style = document.createElement('style');
   style.textContent = `
     #twAutoLabelPanel {
@@ -19,6 +19,7 @@
       width: 180px;
       user-select: none;
       text-align: center;
+      cursor: default;
     }
     #twAutoLabelPanel h4 {
       margin: 0 0 8px 0;
@@ -37,7 +38,6 @@
       font-weight: bold;
       width: 100%;
       transition: background 0.3s ease;
-      margin-top: 6px;
     }
     #twAutoLabelPanel button:hover:not(:disabled) {
       background: #d4b35d;
@@ -49,11 +49,6 @@
     #twAutoLabelPanel .status {
       margin-top: 6px;
       font-weight: bold;
-    }
-    #twCountdown {
-      margin-top: 4px;
-      font-size: 12px;
-      color: #aaa;
     }
     /* Efeito piscante anti-logoff */
     .anti-logoff-blink {
@@ -73,25 +68,20 @@
 
   painel.innerHTML = `
     <h4 id="painelTitulo">Anti-Logoff Robusto</h4>
-    <button id="btnIniciar">Iniciar</button>
-    <button id="btnParar" disabled>Parar</button>
+    <button id="btnToggle">Iniciar</button>
     <div id="status" class="status">Inativo 🔴</div>
-    <div id="twCountdown"></div>
   `;
 
   document.body.appendChild(painel);
 
   // Funções do anti-logoff
   function iniciarAntiLogoffRobusto() {
-    if (window.antiLogoffRobustoAtivo) {
-      console.log("✅ Anti-logoff já está ativo.");
-      return;
-    }
+    if (window.antiLogoffRobustoAtivo) return;
     window.antiLogoffRobustoAtivo = true;
     console.log("🛡️ Anti-logoff robusto ativado.");
 
-    let contador = 0;
     const intervalo = 4 * 60 * 1000; // 4 minutos
+    let contador = 0;
 
     const acoes = [
       () => { document.title = document.title; },
@@ -108,87 +98,49 @@
       try {
         acao();
         console.log(`💤 Mantendo ativo... [Ação ${contador + 1}]`);
-        atualizarContador(intervalo / 1000);
       } catch (e) {
         console.warn("⚠️ Erro na ação anti-logoff:", e);
       }
       contador++;
     }, intervalo);
 
-    iniciarCountdown(intervalo);
+    atualizarStatus();
   }
 
   function desativarAntiLogoff() {
     clearInterval(window.antiLogoffIntervalo);
     window.antiLogoffRobustoAtivo = false;
     console.log("❌ Anti-logoff desativado.");
-    stopCountdown();
+    atualizarStatus();
   }
 
-  // Atualiza o texto e estado dos botões
+  // Atualiza o texto e status
   function atualizarStatus() {
     const statusEl = painel.querySelector('#status');
-    const btnIniciar = painel.querySelector('#btnIniciar');
-    const btnParar = painel.querySelector('#btnParar');
+    const btnToggle = painel.querySelector('#btnToggle');
 
     if (window.antiLogoffRobustoAtivo) {
       statusEl.textContent = "Ativo 🟢";
       statusEl.style.color = "#0f0";
-
-      btnIniciar.disabled = true;
-      btnParar.disabled = false;
+      btnToggle.textContent = "Parar";
+      btnToggle.style.backgroundColor = "#dc3545";
     } else {
       statusEl.textContent = "Inativo 🔴";
       statusEl.style.color = "#f33";
-
-      btnIniciar.disabled = false;
-      btnParar.disabled = true;
+      btnToggle.textContent = "Iniciar";
+      btnToggle.style.backgroundColor = "#b79755";
     }
   }
 
-  // Contador regressivo visual (opcional)
-  let countdownInterval = null;
-  let tempoRestante = 0;
-  const countdownEl = painel.querySelector('#twCountdown');
-
-  function iniciarCountdown(tempoTotal) {
-    tempoRestante = tempoTotal;
-    atualizarContador(tempoRestante);
-    countdownInterval = setInterval(() => {
-      tempoRestante--;
-      if (tempoRestante <= 0) {
-        tempoRestante = 0;
-      }
-      atualizarContador(tempoRestante);
-    }, 1000);
-  }
-
-  function atualizarContador(segundos) {
-    const min = Math.floor(segundos / 60);
-    const seg = segundos % 60;
-    countdownEl.textContent = `Próxima ação em: ${min}:${seg.toString().padStart(2, '0')}`;
-  }
-
-  function stopCountdown() {
-    clearInterval(countdownInterval);
-    countdownEl.textContent = '';
-  }
-
-  // Eventos dos botões
-  const btnIniciar = painel.querySelector('#btnIniciar');
-  const btnParar = painel.querySelector('#btnParar');
-
-  btnIniciar.addEventListener('click', () => {
-    iniciarAntiLogoffRobusto();
-    atualizarStatus();
+  // Evento do botão toggle
+  const btnToggle = painel.querySelector('#btnToggle');
+  btnToggle.addEventListener('click', () => {
+    if (window.antiLogoffRobustoAtivo) {
+      desativarAntiLogoff();
+    } else {
+      iniciarAntiLogoffRobusto();
+    }
   });
-
-  btnParar.addEventListener('click', () => {
-    desativarAntiLogoff();
-    atualizarStatus();
-  });
-
-  // Hover já estilizado no CSS, mas se quiser pode melhorar via JS também
 
   // Drag para mover o painel pelo título
   const painelTitulo = painel.querySelector('#painelTitulo');
@@ -227,10 +179,10 @@
     }
   });
 
+  // Inicializa status
+  atualizarStatus();
+
   // Controle global para console
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
-
-  // Atualiza status inicial
-  atualizarStatus();
 })();
