@@ -1,56 +1,87 @@
 (function() {
+  // Cria estilo CSS
+  const style = document.createElement('style');
+  style.textContent = `
+    #twAutoLabelPanel {
+      position: fixed;
+      bottom: 40px;
+      left: 20px;
+      right: auto;
+      background: #2e2e2e;
+      border: 2px solid #b79755;
+      border-radius: 6px;
+      padding: 10px 15px;
+      font-family: "Tahoma", sans-serif;
+      font-size: 14px;
+      color: #f0e6d2;
+      box-shadow: 0 0 8px rgba(0,0,0,0.8);
+      z-index: 99999;
+      width: 180px;
+      user-select: none;
+      text-align: center;
+    }
+    #twAutoLabelPanel h4 {
+      margin: 0 0 8px 0;
+      font-weight: bold;
+      color: #d4b35d;
+      cursor: move;
+      user-select: none;
+    }
+    #twAutoLabelPanel button {
+      background: #b79755;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #2e2e2e;
+      font-weight: bold;
+      width: 100%;
+      transition: background 0.3s ease;
+      margin-top: 6px;
+    }
+    #twAutoLabelPanel button:hover:not(:disabled) {
+      background: #d4b35d;
+    }
+    #twAutoLabelPanel button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #twAutoLabelPanel .status {
+      margin-top: 6px;
+      font-weight: bold;
+    }
+    #twCountdown {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    /* Efeito piscante anti-logoff */
+    .anti-logoff-blink {
+      animation: blinkAnim 0.3s ease;
+    }
+    @keyframes blinkAnim {
+      0% { background-color: inherit; }
+      50% { background-color: #d4b35d; }
+      100% { background-color: inherit; }
+    }
+  `;
+  document.head.appendChild(style);
+
   // Cria painel flutuante
   const painel = document.createElement('div');
-  painel.style.position = 'fixed';
-  painel.style.bottom = '20px';
-  painel.style.right = '20px';
-  painel.style.background = '#222';
-  painel.style.color = '#eee';
-  painel.style.padding = '10px 15px';
-  painel.style.borderRadius = '8px';
-  painel.style.boxShadow = '0 0 10px rgba(0,0,0,0.7)';
-  painel.style.fontFamily = 'Arial, sans-serif';
-  painel.style.zIndex = 99999;
-  painel.style.userSelect = 'none';
-  painel.style.width = '240px';
-  painel.style.textAlign = 'center';
-  painel.style.cursor = 'default';
+  painel.id = 'twAutoLabelPanel';
 
   painel.innerHTML = `
-    <div id="painelTitulo" style="font-weight:bold; margin-bottom:10px; cursor:move; user-select:none;">
-      Anti-Logoff Robusto
-    </div>
-    <div style="display: flex; justify-content: center; gap: 12px;">
-      <button id="btnIniciar" style="
-        flex: 1;
-        padding: 8px 0;
-        border: none;
-        border-radius: 6px;
-        background-color: #28a745;
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 2px 6px rgba(40,167,69,0.6);
-        transition: background-color 0.3s ease;
-      ">Iniciar</button>
-      <button id="btnParar" style="
-        flex: 1;
-        padding: 8px 0;
-        border: none;
-        border-radius: 6px;
-        background-color: #dc3545;
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 2px 6px rgba(220,53,69,0.6);
-        transition: background-color 0.3s ease;
-      ">Parar</button>
-    </div>
-    <div id="status" style="margin-top:12px; font-size:14px; color:#0f0; user-select:none; min-height:18px;">Inativo</div>
+    <h4 id="painelTitulo">Anti-Logoff Robusto</h4>
+    <button id="btnIniciar">Iniciar</button>
+    <button id="btnParar" disabled>Parar</button>
+    <div id="status" class="status">Inativo 🔴</div>
+    <div id="twCountdown"></div>
   `;
 
   document.body.appendChild(painel);
 
+  // Funções do anti-logoff
   function iniciarAntiLogoffRobusto() {
     if (window.antiLogoffRobustoAtivo) {
       console.log("✅ Anti-logoff já está ativo.");
@@ -77,19 +108,24 @@
       try {
         acao();
         console.log(`💤 Mantendo ativo... [Ação ${contador + 1}]`);
+        atualizarContador(intervalo / 1000);
       } catch (e) {
         console.warn("⚠️ Erro na ação anti-logoff:", e);
       }
       contador++;
     }, intervalo);
+
+    iniciarCountdown(intervalo);
   }
 
   function desativarAntiLogoff() {
     clearInterval(window.antiLogoffIntervalo);
     window.antiLogoffRobustoAtivo = false;
     console.log("❌ Anti-logoff desativado.");
+    stopCountdown();
   }
 
+  // Atualiza o texto e estado dos botões
   function atualizarStatus() {
     const statusEl = painel.querySelector('#status');
     const btnIniciar = painel.querySelector('#btnIniciar');
@@ -100,26 +136,45 @@
       statusEl.style.color = "#0f0";
 
       btnIniciar.disabled = true;
-      btnIniciar.style.cursor = 'not-allowed';
-      btnIniciar.style.opacity = '0.6';
-
       btnParar.disabled = false;
-      btnParar.style.cursor = 'pointer';
-      btnParar.style.opacity = '1';
     } else {
       statusEl.textContent = "Inativo 🔴";
       statusEl.style.color = "#f33";
 
       btnIniciar.disabled = false;
-      btnIniciar.style.cursor = 'pointer';
-      btnIniciar.style.opacity = '1';
-
       btnParar.disabled = true;
-      btnParar.style.cursor = 'not-allowed';
-      btnParar.style.opacity = '0.6';
     }
   }
 
+  // Contador regressivo visual (opcional)
+  let countdownInterval = null;
+  let tempoRestante = 0;
+  const countdownEl = painel.querySelector('#twCountdown');
+
+  function iniciarCountdown(tempoTotal) {
+    tempoRestante = tempoTotal;
+    atualizarContador(tempoRestante);
+    countdownInterval = setInterval(() => {
+      tempoRestante--;
+      if (tempoRestante <= 0) {
+        tempoRestante = 0;
+      }
+      atualizarContador(tempoRestante);
+    }, 1000);
+  }
+
+  function atualizarContador(segundos) {
+    const min = Math.floor(segundos / 60);
+    const seg = segundos % 60;
+    countdownEl.textContent = `Próxima ação em: ${min}:${seg.toString().padStart(2, '0')}`;
+  }
+
+  function stopCountdown() {
+    clearInterval(countdownInterval);
+    countdownEl.textContent = '';
+  }
+
+  // Eventos dos botões
   const btnIniciar = painel.querySelector('#btnIniciar');
   const btnParar = painel.querySelector('#btnParar');
 
@@ -133,24 +188,9 @@
     atualizarStatus();
   });
 
-  // Hover efeitos só se botão habilitado
-  btnIniciar.addEventListener('mouseenter', () => {
-    if (!btnIniciar.disabled) btnIniciar.style.backgroundColor = '#218838';
-  });
-  btnIniciar.addEventListener('mouseleave', () => {
-    if (!btnIniciar.disabled) btnIniciar.style.backgroundColor = '#28a745';
-  });
+  // Hover já estilizado no CSS, mas se quiser pode melhorar via JS também
 
-  btnParar.addEventListener('mouseenter', () => {
-    if (!btnParar.disabled) btnParar.style.backgroundColor = '#c82333';
-  });
-  btnParar.addEventListener('mouseleave', () => {
-    if (!btnParar.disabled) btnParar.style.backgroundColor = '#dc3545';
-  });
-
-  atualizarStatus();
-
-  // Função para tornar o painel arrastável pelo título
+  // Drag para mover o painel pelo título
   const painelTitulo = painel.querySelector('#painelTitulo');
   let offsetX, offsetY, isDragging = false;
 
@@ -191,4 +231,6 @@
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 
+  // Atualiza status inicial
+  atualizarStatus();
 })();
