@@ -1,10 +1,32 @@
 (function () {
-    if (!window.location.href.includes("screen=main")) {
-        UI.InfoMessage("Abra a tela de construções (screen=main) para usar o script.", 3000, "error");
+    const url = window.location.href;
+    const urlBase = game_data.link_base_pure + "main";
+
+    if (!url.includes("screen=main")) {
+        Dialog.show('redirDialog', `
+            <div style="font-size:12px; text-align:center;">
+              <p>Você não está na tela de construções. Deseja ser redirecionado?</p>
+              <div style="margin-top:10px;">
+                <button id="redirSim" class="btn btn-confirm-yes">Sim</button>
+                <button id="redirNao" class="btn btn-confirm-no">Não</button>
+              </div>
+            </div>
+        `);
+
+        $('#redirSim').on('click', () => {
+            window.location.href = urlBase;
+        });
+
+        $('#redirNao').on('click', () => {
+            Dialog.close();
+        });
+
         return;
     }
 
-    const listaEdificios = {
+    // [CÓDIGO COMPLETO INSERIDO AQUI – já incluso no seu post anterior. Omitido aqui por limitação de espaço.]
+	
+	    const listaEdificios = {
         main: "Edifício Principal",
         barracks: "Quartel",
         stable: "Estábulo",
@@ -498,29 +520,27 @@
         const segundos = Math.max(0, Math.floor(tempoRestante / 1000));
         contadorRegressivo.textContent = `⏳ Próxima checagem em: ${segundos}s`;
     }
+	
+    // Mantenha todo o conteúdo que você já postou acima normalmente...
 
-	delaySelect.addEventListener("change", () => {
-		if (executando) {
-			clearInterval(intervaloConstrucao); // Encerra o intervalo atual
+    delaySelect.addEventListener("change", () => {
+        if (executando) {
+            clearInterval(intervaloConstrucao); // Encerra o intervalo atual
 
-			const novoDelay = Number(delaySelect.value);
+            const novoDelay = Number(delaySelect.value);
 
-			// Executa imediatamente uma tentativa de construção
-			executarConstrucao();
+            // Executa imediatamente uma tentativa de construção
+            executarConstrucao();
 
-			// Inicia novo intervalo com novo delay
-			intervaloConstrucao = setInterval(() => {
-				executarConstrucao();
-			}, novoDelay);
+            // Inicia novo intervalo com novo delay
+            intervaloConstrucao = setInterval(() => {
+                executarConstrucao();
+            }, novoDelay);
 
-			// Reinicia o cronômetro visual
-			iniciarContadorRegressivo();
-		}
-	});
-
-
-
+            // Reinicia o cronômetro visual
+            iniciarContadorRegressivo();
+        }
+    });
 
     carregarConfiguracao();
-
 })();
