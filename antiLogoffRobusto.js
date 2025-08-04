@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         Anti-Logoff Robusto
+// @namespace    https://tribalwarstools.github.io/
+// @version      1.0
+// @description  Impede o logoff automático no Tribal Wars com ações simuladas regulares
+// @author       SeuNome
+// @match        *://*.tribalwars.com.br/*
+// @match        *://*.die-staemme.de/*
+// @match        *://*.tribalwars.net/*
+// @icon         https://www.tribalwars.com.br/favicon.ico
+// @grant        none
+// @run-at       document-end
+// ==/UserScript==
+
+
 (function() {
   // Estilo CSS
   const style = document.createElement('style');
@@ -189,6 +204,7 @@
   // Executa automaticamente ao iniciar
   iniciarAntiLogoffRobusto();
 })();
+
 
 
 
