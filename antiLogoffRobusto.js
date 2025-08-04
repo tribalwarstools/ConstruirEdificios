@@ -185,6 +185,11 @@
   // Controle global para console
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
+
+  // Executa automaticamente ao iniciar
+  iniciarAntiLogoffRobusto();
 })();
+
+
 
 
