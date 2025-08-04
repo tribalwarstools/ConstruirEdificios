@@ -122,12 +122,12 @@
     if (window.antiLogoffRobustoAtivo) {
       statusEl.textContent = "Ativo 🟢";
       statusEl.style.color = "#0f0";
-      btnToggle.textContent = "Parar";
+      btnToggle.textContent = "Desligar";
       btnToggle.style.backgroundColor = "#dc3545";
     } else {
       statusEl.textContent = "Inativo 🔴";
       statusEl.style.color = "#f33";
-      btnToggle.textContent = "Iniciar";
+      btnToggle.textContent = "Ligar";
       btnToggle.style.backgroundColor = "#b79755";
     }
   }
@@ -186,3 +186,4 @@
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 })();
+
