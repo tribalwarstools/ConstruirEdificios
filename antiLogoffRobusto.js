@@ -120,12 +120,12 @@
     const btnToggle = painel.querySelector('#btnToggle');
 
     if (window.antiLogoffRobustoAtivo) {
-      statusEl.textContent = "Ativo 🟢";
+      statusEl.textContent = "Status: Ativo";
       statusEl.style.color = "#0f0";
       btnToggle.textContent = "Desligar";
       btnToggle.style.backgroundColor = "#dc3545";
     } else {
-      statusEl.textContent = "Inativo 🔴";
+      statusEl.textContent = "Status: Inativo";
       statusEl.style.color = "#f33";
       btnToggle.textContent = "Ligar";
       btnToggle.style.backgroundColor = "#b79755";
@@ -186,4 +186,5 @@
   window.iniciarAntiLogoffRobusto = iniciarAntiLogoffRobusto;
   window.desativarAntiLogoff = desativarAntiLogoff;
 })();
+
 
