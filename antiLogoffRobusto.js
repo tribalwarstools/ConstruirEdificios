@@ -30,7 +30,7 @@
       font-size: 14px;
       color: #f0e6d2;
       box-shadow: 0 0 8px rgba(0,0,0,0.8);
-      z-index: 99999;
+      z-index: 999999;
       width: 180px;
       user-select: none;
       text-align: center;
@@ -204,8 +204,3 @@
   // Executa automaticamente ao iniciar
   iniciarAntiLogoffRobusto();
 })();
-
-
-
-
-
