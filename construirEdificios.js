@@ -166,20 +166,44 @@
         listaItens.push(item);
     }
 
-    const btnToggleMarcar = document.createElement("button");
-    btnToggleMarcar.className = "twc-btn";
-    btnToggleMarcar.textContent = "Marcar Todos";
-    function atualizarTextoBotaoToggle() {
-        btnToggleMarcar.textContent = listaItens.some(li => !li.querySelector("input").checked) ? "Marcar Todos" : "Desmarcar Todos";
-    }
-    btnToggleMarcar.onclick = () => {
-        const marcar = listaItens.some(li => !li.querySelector("input").checked);
-        listaItens.forEach(li => li.querySelector("input").checked = marcar);
-        atualizarContadorFila();
-        salvarConfiguracao();
-        atualizarTextoBotaoToggle();
-    };
-    painel.appendChild(btnToggleMarcar);
+
+
+// ===== Botões Marcar e Salvar lado a lado =====
+const botoesTopoWrapper = document.createElement("div");
+botoesTopoWrapper.style = `
+    display: flex;
+    gap: 8px;
+    margin: 8px 12px 0 12px;
+`;
+
+const btnToggleMarcar = document.createElement("button");
+btnToggleMarcar.className = "twc-btn";
+btnToggleMarcar.textContent = "Marcar Todos";
+btnToggleMarcar.style.flex = "1";
+
+function atualizarTextoBotaoToggle() {
+    btnToggleMarcar.textContent = listaItens.some(li => !li.querySelector("input").checked) ? "Marcar Todos" : "Desmarcar Todos";
+}
+btnToggleMarcar.onclick = () => {
+    const marcar = listaItens.some(li => !li.querySelector("input").checked);
+    listaItens.forEach(li => li.querySelector("input").checked = marcar);
+    atualizarContadorFila();
+    salvarConfiguracao();
+    atualizarTextoBotaoToggle();
+};
+
+const btnSalvarConfig = document.createElement("button");
+btnSalvarConfig.className = "twc-btn";
+btnSalvarConfig.textContent = "💾 Salvar";
+btnSalvarConfig.style.flex = "1";
+btnSalvarConfig.onclick = () => {
+    salvarConfiguracao();
+    UI.InfoMessage("Configuração salva!", 2000, "success");
+};
+
+botoesTopoWrapper.append(btnToggleMarcar, btnSalvarConfig);
+painel.appendChild(botoesTopoWrapper);
+
 
     const delayWrapper = document.createElement("div");
     delayWrapper.style = "margin: 12px;";
@@ -197,12 +221,6 @@
     contadorRegressivo.className = "twc-contador";
     delayWrapper.appendChild(contadorRegressivo);
     painel.appendChild(delayWrapper);
-
-    const btnSalvarConfig = document.createElement("button");
-    btnSalvarConfig.className = "twc-btn";
-    btnSalvarConfig.textContent = "💾 Salvar Configuração";
-    btnSalvarConfig.onclick = () => { salvarConfiguracao(); UI.InfoMessage("Configuração salva!", 2000, "success"); };
-    painel.appendChild(btnSalvarConfig);
 
     const contadorRealFila = document.createElement("div");
     contadorRealFila.className = "twc-contador";
