@@ -35,7 +35,7 @@
                 margin: 0;
                 max-height: 320px;
                 overflow-y: auto;
-                background: #1c1c1c;
+                background: #2e2e2e;
             }
             .twc-item {
                 display: flex;
@@ -355,3 +355,4 @@ painel.appendChild(botoesTopoWrapper);
 
 	
 })();
+
