@@ -166,44 +166,41 @@
         listaItens.push(item);
     }
 
+    // ===== Botões Marcar e Salvar lado a lado =====
+    const botoesTopoWrapper = document.createElement("div");
+    botoesTopoWrapper.style = `
+        display: flex;
+        gap: 8px;
+        margin: 8px 12px 0 12px;
+    `;
 
+    const btnToggleMarcar = document.createElement("button");
+    btnToggleMarcar.className = "twc-btn";
+    btnToggleMarcar.textContent = "Marcar Todos";
+    btnToggleMarcar.style.flex = "1";
 
-// ===== Botões Marcar e Salvar lado a lado =====
-const botoesTopoWrapper = document.createElement("div");
-botoesTopoWrapper.style = `
-    display: flex;
-    gap: 8px;
-    margin: 8px 12px 0 12px;
-`;
+    function atualizarTextoBotaoToggle() {
+        btnToggleMarcar.textContent = listaItens.some(li => !li.querySelector("input").checked) ? "Marcar Todos" : "Desmarcar Todos";
+    }
+    btnToggleMarcar.onclick = () => {
+        const marcar = listaItens.some(li => !li.querySelector("input").checked);
+        listaItens.forEach(li => li.querySelector("input").checked = marcar);
+        atualizarContadorFila();
+        salvarConfiguracao();
+        atualizarTextoBotaoToggle();
+    };
 
-const btnToggleMarcar = document.createElement("button");
-btnToggleMarcar.className = "twc-btn";
-btnToggleMarcar.textContent = "Marcar Todos";
-btnToggleMarcar.style.flex = "1";
+    const btnSalvarConfig = document.createElement("button");
+    btnSalvarConfig.className = "twc-btn";
+    btnSalvarConfig.textContent = "💾 Salvar";
+    btnSalvarConfig.style.flex = "1";
+    btnSalvarConfig.onclick = () => {
+        salvarConfiguracao();
+        UI.InfoMessage("Configuração salva!", 2000, "success");
+    };
 
-function atualizarTextoBotaoToggle() {
-    btnToggleMarcar.textContent = listaItens.some(li => !li.querySelector("input").checked) ? "Marcar Todos" : "Desmarcar Todos";
-}
-btnToggleMarcar.onclick = () => {
-    const marcar = listaItens.some(li => !li.querySelector("input").checked);
-    listaItens.forEach(li => li.querySelector("input").checked = marcar);
-    atualizarContadorFila();
-    salvarConfiguracao();
-    atualizarTextoBotaoToggle();
-};
-
-const btnSalvarConfig = document.createElement("button");
-btnSalvarConfig.className = "twc-btn";
-btnSalvarConfig.textContent = "💾 Salvar";
-btnSalvarConfig.style.flex = "1";
-btnSalvarConfig.onclick = () => {
-    salvarConfiguracao();
-    UI.InfoMessage("Configuração salva!", 2000, "success");
-};
-
-botoesTopoWrapper.append(btnToggleMarcar, btnSalvarConfig);
-painel.appendChild(botoesTopoWrapper);
-
+    botoesTopoWrapper.append(btnToggleMarcar, btnSalvarConfig);
+    painel.appendChild(botoesTopoWrapper);
 
     const delayWrapper = document.createElement("div");
     delayWrapper.style = "margin: 12px;";
@@ -280,6 +277,9 @@ painel.appendChild(botoesTopoWrapper);
         btnParar.disabled = false;
         intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value));
         iniciarContadorRegressivo();
+
+        // 🟢 Mensagem clássica do jogo ao iniciar
+        UI.InfoMessage("Fila de construção iniciada!", 2000, "success");
     }
     function pararConstruir() {
         clearInterval(intervaloConstrucao);
@@ -287,6 +287,9 @@ painel.appendChild(botoesTopoWrapper);
         btnIniciar.disabled = false;
         btnParar.disabled = true;
         clearInterval(intervaloRegressivo);
+
+        // 🔴 Mensagem clássica do jogo ao parar
+        UI.InfoMessage("Fila de construção parada!", 2000, "error");
     }
     function iniciarContadorRegressivo() {
         clearInterval(intervaloRegressivo);
@@ -315,44 +318,48 @@ painel.appendChild(botoesTopoWrapper);
 
     btnIniciar.onclick = iniciarExecucao;
     btnParar.onclick = pararConstruir;
-    delaySelect.onchange = () => { if (executando) { clearInterval(intervaloConstrucao); executarConstrucao(); intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value)); iniciarContadorRegressivo(); } };
-    carregarConfiguracao();
-	
-	// ===== Função de arrastar painel =====
-(function habilitarArrastePainel() {
-    const painel = document.querySelector(".twc-painel");
-    const cabecalho = painel.querySelector(".twc-cabecalho");
-
-    cabecalho.onmousedown = function (e) {
-        e.preventDefault();
-        let shiftX = e.clientX - painel.getBoundingClientRect().left;
-        let shiftY = e.clientY - painel.getBoundingClientRect().top;
-
-        function moveAt(pageX, pageY) {
-            let newX = pageX - shiftX;
-            let newY = pageY - shiftY;
-            const maxX = window.innerWidth - painel.offsetWidth;
-            const maxY = window.innerHeight - painel.offsetHeight;
-            newX = Math.min(Math.max(0, newX), maxX);
-            newY = Math.min(Math.max(0, newY), maxY);
-            painel.style.left = newX + "px";
-            painel.style.top = newY + "px";
-            painel.style.right = "auto";
-        }
-
-        function onMouseMove(event) {
-            moveAt(event.pageX, event.pageY);
-        }
-
-        document.addEventListener("mousemove", onMouseMove);
-        document.onmouseup = function () {
-            document.removeEventListener("mousemove", onMouseMove);
-            document.onmouseup = null;
-        };
+    delaySelect.onchange = () => { 
+        if (executando) { 
+            clearInterval(intervaloConstrucao); 
+            executarConstrucao(); 
+            intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value)); 
+            iniciarContadorRegressivo(); 
+        } 
     };
-    cabecalho.ondragstart = () => false;
-})();
+    carregarConfiguracao();
 
-	
-})();
+    // ===== Função de arrastar painel =====
+    (function habilitarArrastePainel() {
+        const painel = document.querySelector(".twc-painel");
+        const cabecalho = painel.querySelector(".twc-cabecalho");
 
+        cabecalho.onmousedown = function (e) {
+            e.preventDefault();
+            let shiftX = e.clientX - painel.getBoundingClientRect().left;
+            let shiftY = e.clientY - painel.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                let newX = pageX - shiftX;
+                let newY = pageY - shiftY;
+                const maxX = window.innerWidth - painel.offsetWidth;
+                const maxY = window.innerHeight - painel.offsetHeight;
+                newX = Math.min(Math.max(0, newX), maxX);
+                newY = Math.min(Math.max(0, newY), maxY);
+                painel.style.left = newX + "px";
+                painel.style.top = newY + "px";
+                painel.style.right = "auto";
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.onmouseup = function () {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.onmouseup = null;
+            };
+        };
+        cabecalho.ondragstart = () => false;
+    })();
+})();
