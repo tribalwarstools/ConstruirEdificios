@@ -1,647 +1,365 @@
-class ConstructionQueueManager {
-    constructor() {
-        this.CONFIG = {
-            panel: {
-                width: 300,
-                position: { top: 120, right: 25 },
-                colors: {
-                    background: '#2a2a2a',
-                    border: '#c8a971',
-                    text: '#f0d9a8',
-                    header: {
-                        gradient: ['#353535', '#1a1a1a'],
-                        text: '#f5e5c6'
-                    },
-                    button: {
-                        background: '#1e1e1e',
-                        hover: '#3d3d3d',
-                        active: '#4a4a4a'
-                    }
-                }
-            },
-            delays: [0.5, 1, 2, 3, 5, 10, 15, 30, 60],
-            storageKey: 'twConstructionQueueConfig_v2'
-        };
-
-        this.BUILDINGS = {
-            main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo",
-            garage: "Oficina", watchtower: "Torre de Vigia", smith: "Ferreiro",
-            place: "Praça de Reunião", statue: "Estátua", market: "Mercado",
-            wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
-            farm: "Fazenda", storage: "Armazém", hide: "Esconderijo",
-            wall: "Muralha", snob: "Academia"
-        };
-
-        this.state = {
-            isRunning: false,
-            intervalId: null,
-            countdownInterval: null,
-            timeRemaining: 0,
-            items: [],
-            dragSource: null
-        };
-
-        this.elements = {
-            panel: null,
-            listContainer: null,
-            countdown: null,
-            queueCounter: null,
-            selectedCounter: null,
-            startBtn: null,
-            stopBtn: null,
-            delaySelect: null,
-            toggleAllBtn: null
-        };
-
-        this.init();
-    }
-
-    init() {
-        if (!this.validateScreen()) return;
-        
-        this.applyStyles();
-        this.createPanel();
-        this.setupEventListeners();
-        this.loadConfiguration();
-        this.updateCounters();
-    }
-
-    validateScreen() {
-        if (!window.location.href.includes("screen=main")) {
-            this.showRedirectDialog();
-            return false;
-        }
-        return true;
-    }
-
-    showRedirectDialog() {
-        const url = game_data.link_base_pure + "main";
-        const dialogContent = `
-            <div style="font-size:12px; text-align:center; padding:10px;">
-                <p>Você não está na tela de construções. Deseja ser redirecionado?</p>
-                <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
-                    <button class="btn btn-confirm-yes" onclick="window.location.href='${url}'">Sim</button>
-                    <button class="btn btn-confirm-no" onclick="Dialog.close()">Não</button>
-                </div>
-            </div>
-        `;
-        
-        Dialog.show('redirDialog', dialogContent);
-    }
-
-    applyStyles() {
+(function () {
+    // ====== NOVO CSS PADRÃO ======
+    function aplicarEstiloPainelConstrucao() {
         const style = document.createElement('style');
         style.textContent = `
             .twc-painel {
-                background: ${this.CONFIG.panel.colors.background};
-                border: 2px solid ${this.CONFIG.panel.colors.border};
-                border-radius: 8px;
-                font-family: 'Segoe UI', Tahoma, sans-serif;
+                background: #2e2e2e;
+                border: 2px solid #b79755;
+                border-radius: 6px;
+                font-family: Verdana, sans-serif;
                 font-size: 13px;
-                color: ${this.CONFIG.panel.colors.text};
-                z-index: 10000;
-                box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.6);
+                color: #f5deb3;
+                z-index: 999999;
+                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
                 position: fixed;
-                top: ${this.CONFIG.panel.position.top}px;
-                right: ${this.CONFIG.panel.position.right}px;
-                width: ${this.CONFIG.panel.width}px;
+                top: 100px;
+                right: 20px;
+                width: 280px;
                 user-select: none;
-                backdrop-filter: blur(2px);
             }
-            
             .twc-cabecalho {
-                background: linear-gradient(to bottom, ${this.CONFIG.panel.colors.header.gradient.join(', ')});
-                border-bottom: 2px solid ${this.CONFIG.panel.colors.border};
-                padding: 10px 15px;
+                background: linear-gradient(to bottom, #3a3a3a, #1e1e1e);
+                border-bottom: 1px solid #b79755;
+                padding: 8px 12px;
                 font-weight: bold;
                 cursor: move;
-                color: ${this.CONFIG.panel.colors.header.text};
+                color: #f0e2b6;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                border-radius: 6px 6px 0 0;
             }
-            
             .twc-lista {
                 list-style: none;
-                padding: 8px 0;
+                padding: 6px 12px;
                 margin: 0;
-                max-height: 350px;
+                max-height: 320px;
                 overflow-y: auto;
-                background: ${this.CONFIG.panel.colors.background};
+                background: #2e2e2e;
             }
-            
             .twc-item {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 8px 15px;
-                border-bottom: 1px solid #3a3a3a;
-                background: ${this.CONFIG.panel.colors.background};
+                padding: 6px 6px 6px 0;
+                border-bottom: 1px solid #444;
+                background: #2e2e2e;
                 cursor: grab;
                 font-weight: 600;
                 font-size: 13px;
-                color: ${this.CONFIG.panel.colors.text};
-                transition: all 0.2s ease;
+                color: #f5deb3;
             }
-            
             .twc-item:hover {
-                background: #353535;
-                transform: translateX(2px);
+                background: #3a3a3a;
             }
-            
-            .twc-item.dragging {
-                opacity: 0.5;
-                background: #404040;
-            }
-            
             .twc-btn {
                 font-size: 13px;
-                padding: 6px 12px;
-                border-radius: 5px;
-                border: 1px solid ${this.CONFIG.panel.colors.border};
-                background-color: ${this.CONFIG.panel.colors.button.background};
-                color: ${this.CONFIG.panel.colors.text};
-                cursor: pointer;
-                font-weight: bold;
-                transition: all 0.2s ease;
-                min-width: 80px;
-            }
-            
-            .twc-btn:hover {
-                background-color: ${this.CONFIG.panel.colors.button.hover};
-                transform: translateY(-1px);
-            }
-            
-            .twc-btn:active {
-                background-color: ${this.CONFIG.panel.colors.button.active};
-                transform: translateY(0);
-            }
-            
-            .twc-btn:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-                transform: none;
-            }
-            
-            .twc-delay-select {
-                padding: 6px 8px;
-                border-radius: 5px;
-                border: 1px solid ${this.CONFIG.panel.colors.border};
-                font-size: 13px;
-                background-color: ${this.CONFIG.panel.colors.button.background};
-                color: ${this.CONFIG.panel.colors.text};
+                padding: 4px 6px;
+                margin-top: 6px;
+                border-radius: 4px;
+                border: 1px solid #b79755;
+                background-color: #1c1c1c;
+                color: #f5deb3;
                 cursor: pointer;
                 width: 100%;
-            }
-            
-            .twc-contador {
-                font-size: 13px;
                 font-weight: bold;
-                margin: 8px 15px;
+            }
+            .twc-btn:hover {
+                background-color: #3a3a3a;
+            }
+            .twc-delay-select {
+                padding: 4px 6px;
+                border-radius: 4px;
+                border: 1px solid #b79755;
+                font-size: 13px;
+                background-color: #1c1c1c;
+                color: #f5deb3;
+                cursor: pointer;
+            }
+            .twc-contador {
+                font-size: 14px;
+                font-weight: bold;
+                margin: 6px 12px;
                 text-align: center;
                 color: #ffd700;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
             }
-            
             .twc-botoes {
                 display: flex;
-                gap: 10px;
+                gap: 8px;
                 justify-content: center;
-                margin: 15px;
-                padding-top: 10px;
-                border-top: 1px solid #3a3a3a;
-            }
-            
-            .twc-flex {
-                display: flex;
-                gap: 10px;
-                margin: 10px 15px;
-            }
-            
-            .twc-flex-1 {
-                flex: 1;
-            }
-            
-            .twc-checkbox {
-                accent-color: ${this.CONFIG.panel.colors.border};
-                cursor: pointer;
-                transform: scale(1.1);
-            }
-            
-            .twc-section {
-                margin: 10px 0;
-                padding: 0 15px;
-            }
-            
-            .twc-label {
-                display: block;
-                margin-bottom: 5px;
-                font-weight: 600;
-                color: ${this.CONFIG.panel.colors.header.text};
+                margin: 12px;
             }
         `;
         document.head.appendChild(style);
     }
+    aplicarEstiloPainelConstrucao();
 
-    createPanel() {
-        this.elements.panel = document.createElement("div");
-        this.elements.panel.className = "twc-painel";
-        
-        this.createHeader();
-        this.createList();
-        this.createControls();
-        this.createCounters();
-        this.createButtons();
-        
-        document.body.appendChild(this.elements.panel);
-        this.setupDragAndDrop();
+    // ====== SEU SCRIPT ORIGINAL ADAPTADO ======
+    const urlBase = game_data.link_base_pure + "main";
+    if (!window.location.href.includes("screen=main")) {
+        Dialog.show('redirDialog', `
+            <div style="font-size:12px; text-align:center;">
+              <p>Você não está na tela de construções. Deseja ser redirecionado?</p>
+              <div style="margin-top:10px;">
+                <button id="redirSim" class="btn btn-confirm-yes">Sim</button>
+                <button id="redirNao" class="btn btn-confirm-no">Não</button>
+              </div>
+            </div>
+        `);
+        $('#redirSim').on('click', () => window.location.href = urlBase);
+        $('#redirNao').on('click', () => Dialog.close());
+        return;
     }
 
-    createHeader() {
-        const header = document.createElement("div");
-        header.className = "twc-cabecalho";
-        header.innerHTML = `
-            <span>🏗️ Fila de Construção</span>
-            <span style="cursor:pointer; font-size:16px;" title="Fechar painel">✖</span>
-        `;
-        
-        header.lastChild.onclick = () => this.closePanel();
-        this.elements.panel.appendChild(header);
-    }
+    const listaEdificios = {
+        main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo", garage: "Oficina",
+        watchtower: "Torre de Vigia", smith: "Ferreiro", place: "Praça de Reunião", statue: "Estátua",
+        market: "Mercado", wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
+        farm: "Fazenda", storage: "Armazém", hide: "Esconderijo", wall: "Muralha", snob: "Academia"
+    };
 
-    createList() {
-        this.elements.listContainer = document.createElement("ul");
-        this.elements.listContainer.className = "twc-lista";
-        
-        Object.entries(this.BUILDINGS).forEach(([code, name]) => {
-            const item = this.createListItem(code, name);
-            this.elements.listContainer.appendChild(item);
-            this.state.items.push(item);
-        });
-        
-        this.elements.panel.appendChild(this.elements.listContainer);
-    }
+    const painel = document.createElement("div");
+    painel.className = "twc-painel";
 
-    createListItem(code, name) {
+    const cabecalho = document.createElement("div");
+    cabecalho.className = "twc-cabecalho";
+    cabecalho.innerHTML = `<span>🏗️ Fila de Construção</span><span style="cursor:pointer;" title="Fechar painel">✖</span>`;
+    cabecalho.lastChild.onclick = () => {
+        if (executando) { alert("❗ Pare a execução antes de fechar."); return; }
+        pararConstruir();
+        painel.remove();
+    };
+    painel.appendChild(cabecalho);
+
+    const listaContainer = document.createElement("ul");
+    listaContainer.className = "twc-lista";
+    painel.appendChild(listaContainer);
+
+    const listaItens = [];
+    function criarItem(cod, nome) {
         const li = document.createElement("li");
         li.className = "twc-item";
-        li.dataset.code = code;
-        
+        li.dataset.cod = cod;
         const span = document.createElement("span");
-        span.textContent = name;
-        
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "twc-checkbox";
-        checkbox.onchange = () => this.handleCheckboxChange();
-        
-        li.append(span, checkbox);
-        this.setupListItemDrag(li);
-        
+        span.textContent = nome;
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.onchange = () => { atualizarContadorFila(); salvarConfiguracao(); atualizarTextoBotaoToggle(); };
+        li.append(span, chk);
+        li.draggable = true;
+        li.ondragstart = e => { e.dataTransfer.setData("text/plain", cod); li.style.opacity = "0.5"; };
+        li.ondragend = () => li.style.opacity = "1";
+        li.ondrop = e => {
+            e.preventDefault();
+            const draggedCod = e.dataTransfer.getData("text/plain");
+            if (draggedCod === cod) return;
+            const draggedEl = listaItens.find(item => item.dataset.cod === draggedCod);
+            listaContainer.insertBefore(draggedEl, li);
+            salvarConfiguracao();
+        };
+        li.ondragover = e => e.preventDefault();
         return li;
     }
-
-    setupListItemDrag(item) {
-        item.draggable = true;
-        
-        item.ondragstart = (e) => {
-            this.state.dragSource = item;
-            e.dataTransfer.setData("text/plain", item.dataset.code);
-            item.classList.add("dragging");
-        };
-        
-        item.ondragend = () => {
-            item.classList.remove("dragging");
-            this.state.dragSource = null;
-        };
-        
-        item.ondragover = (e) => e.preventDefault();
-        item.ondrop = (e) => this.handleItemDrop(e, item);
+    for (const [cod, nome] of Object.entries(listaEdificios)) {
+        const item = criarItem(cod, nome);
+        listaContainer.appendChild(item);
+        listaItens.push(item);
     }
 
-    createControls() {
-        // Toggle all button
-        const toggleWrapper = document.createElement("div");
-        toggleWrapper.className = "twc-flex";
-        
-        this.elements.toggleAllBtn = document.createElement("button");
-        this.elements.toggleAllBtn.className = "twc-btn twc-flex-1";
-        this.elements.toggleAllBtn.textContent = "Marcar Todos";
-        this.elements.toggleAllBtn.onclick = () => this.toggleAllItems();
-        
-        const saveBtn = document.createElement("button");
-        saveBtn.className = "twc-btn twc-flex-1";
-        saveBtn.textContent = "💾 Salvar";
-        saveBtn.onclick = () => this.saveConfiguration();
-        
-        toggleWrapper.append(this.elements.toggleAllBtn, saveBtn);
-        this.elements.panel.appendChild(toggleWrapper);
-        
-        // Delay selector
-        const delayWrapper = document.createElement("div");
-        delayWrapper.className = "twc-section";
-        
-        const label = document.createElement("label");
-        label.className = "twc-label";
-        label.textContent = "Intervalo de verificação:";
-        
-        this.elements.delaySelect = document.createElement("select");
-        this.elements.delaySelect.className = "twc-delay-select";
-        
-        this.CONFIG.delays.forEach(min => {
-            const option = document.createElement("option");
-            option.value = min * 60000;
-            option.textContent = min === 0.5 ? "30 segundos" : `${min} minuto${min > 1 ? "s" : ""}`;
-            this.elements.delaySelect.appendChild(option);
-        });
-        
-        delayWrapper.append(label, this.elements.delaySelect);
-        this.elements.panel.appendChild(delayWrapper);
+    // ===== Botões Marcar e Salvar lado a lado =====
+    const botoesTopoWrapper = document.createElement("div");
+    botoesTopoWrapper.style = `
+        display: flex;
+        gap: 8px;
+        margin: 8px 12px 0 12px;
+    `;
+
+    const btnToggleMarcar = document.createElement("button");
+    btnToggleMarcar.className = "twc-btn";
+    btnToggleMarcar.textContent = "Marcar Todos";
+    btnToggleMarcar.style.flex = "1";
+
+    function atualizarTextoBotaoToggle() {
+        btnToggleMarcar.textContent = listaItens.some(li => !li.querySelector("input").checked) ? "Marcar Todos" : "Desmarcar Todos";
+    }
+    btnToggleMarcar.onclick = () => {
+        const marcar = listaItens.some(li => !li.querySelector("input").checked);
+        listaItens.forEach(li => li.querySelector("input").checked = marcar);
+        atualizarContadorFila();
+        salvarConfiguracao();
+        atualizarTextoBotaoToggle();
+    };
+
+    const btnSalvarConfig = document.createElement("button");
+    btnSalvarConfig.className = "twc-btn";
+    btnSalvarConfig.textContent = "💾 Salvar";
+    btnSalvarConfig.style.flex = "1";
+    btnSalvarConfig.onclick = () => {
+        salvarConfiguracao();
+        UI.InfoMessage("Configuração salva!", 2000, "success");
+    };
+
+    botoesTopoWrapper.append(btnToggleMarcar, btnSalvarConfig);
+    painel.appendChild(botoesTopoWrapper);
+
+    const delayWrapper = document.createElement("div");
+    delayWrapper.style = "margin: 12px;";
+    delayWrapper.innerHTML = `<label style="font-weight:600;">Checar daqui a: </label>`;
+    const delaySelect = document.createElement("select");
+    delaySelect.className = "twc-delay-select";
+    [0.5, 1, 2, 3, 5, 10, 15, 30, 60].forEach(min => {
+        const opt = document.createElement("option");
+        opt.value = min * 60000;
+        opt.textContent = min === 0.5 ? "30 segundos" : `${min} minuto${min > 1 ? "s" : ""}`;
+        delaySelect.appendChild(opt);
+    });
+    delayWrapper.appendChild(delaySelect);
+    const contadorRegressivo = document.createElement("div");
+    contadorRegressivo.className = "twc-contador";
+    delayWrapper.appendChild(contadorRegressivo);
+    painel.appendChild(delayWrapper);
+
+    const contadorRealFila = document.createElement("div");
+    contadorRealFila.className = "twc-contador";
+    painel.appendChild(contadorRealFila);
+    const contadorMarcados = document.createElement("div");
+    contadorMarcados.className = "twc-contador";
+    painel.appendChild(contadorMarcados);
+
+    const botoesWrapper = document.createElement("div");
+    botoesWrapper.className = "twc-botoes";
+    const btnIniciar = document.createElement("button");
+    btnIniciar.className = "twc-btn";
+    btnIniciar.textContent = "▶️ Iniciar";
+    const btnParar = document.createElement("button");
+    btnParar.className = "twc-btn";
+    btnParar.textContent = "⏹️ Parar";
+    btnParar.disabled = true;
+    botoesWrapper.append(btnIniciar, btnParar);
+    painel.appendChild(botoesWrapper);
+
+    document.body.appendChild(painel);
+
+    // ==== Funções originais preservadas ====
+    function atualizarContadorFila() {
+        const fila = [...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel")).length;
+        contadorRealFila.textContent = `🏗️ Construções na fila: ${fila}`;
+        contadorMarcados.textContent = `✅ Itens marcados: ${listaItens.filter(li => li.querySelector("input").checked).length}`;
+    }
+    function obterFilaOrdenada() {
+        return [...listaContainer.children].filter(li => li.querySelector("input").checked).map(li => li.dataset.cod);
     }
 
-    createCounters() {
-        this.elements.countdown = document.createElement("div");
-        this.elements.countdown.className = "twc-contador";
-        
-        this.elements.queueCounter = document.createElement("div");
-        this.elements.queueCounter.className = "twc-contador";
-        
-        this.elements.selectedCounter = document.createElement("div");
-        this.elements.selectedCounter.className = "twc-contador";
-        
-        this.elements.panel.append(
-            this.elements.countdown,
-            this.elements.queueCounter,
-            this.elements.selectedCounter
-        );
-    }
+    let intervaloConstrucao = null;
+    let executando = false;
+    let intervaloRegressivo = null;
+    let tempoRestante = 0;
 
-    createButtons() {
-        const buttonsWrapper = document.createElement("div");
-        buttonsWrapper.className = "twc-botoes";
-        
-        this.elements.startBtn = document.createElement("button");
-        this.elements.startBtn.className = "twc-btn";
-        this.elements.startBtn.textContent = "▶️ Iniciar";
-        this.elements.startBtn.onclick = () => this.startConstruction();
-        
-        this.elements.stopBtn = document.createElement("button");
-        this.elements.stopBtn.className = "twc-btn";
-        this.elements.stopBtn.textContent = "⏹️ Parar";
-        this.elements.stopBtn.disabled = true;
-        this.elements.stopBtn.onclick = () => this.stopConstruction();
-        
-        buttonsWrapper.append(this.elements.startBtn, this.elements.stopBtn);
-        this.elements.panel.appendChild(buttonsWrapper);
-    }
-
-    handleCheckboxChange() {
-        this.updateCounters();
-        this.saveConfiguration();
-        this.updateToggleButtonText();
-    }
-
-    handleItemDrop(e, targetItem) {
-        e.preventDefault();
-        if (!this.state.dragSource || this.state.dragSource === targetItem) return;
-        
-        const allItems = Array.from(this.elements.listContainer.children);
-        const sourceIndex = allItems.indexOf(this.state.dragSource);
-        const targetIndex = allItems.indexOf(targetItem);
-        
-        if (sourceIndex < targetIndex) {
-            this.elements.listContainer.insertBefore(this.state.dragSource, targetItem.nextSibling);
-        } else {
-            this.elements.listContainer.insertBefore(this.state.dragSource, targetItem);
-        }
-        
-        this.saveConfiguration();
-    }
-
-    executeConstruction() {
-        if (this.getCurrentQueueCount() >= 5) {
-            this.showNotification("⛔ Fila cheia. Aguardando...", "warning");
+    function executarConstrucao() {
+        if ([...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel")).length >= 5) {
+            UI.InfoMessage("⛔ Fila cheia. Aguardando...", 2000, "warning");
             return;
         }
-        
-        const queue = this.getOrderedQueue();
-        if (!queue.length) {
-            this.stopConstruction();
-            return;
+        const fila = obterFilaOrdenada();
+        if (!fila.length) { pararConstruir(); return; }
+        for (let cod of fila) {
+            const botao = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
+                .find(b => b.offsetParent !== null && !b.classList.contains('disabled'));
+            if (botao) { botao.click(); UI.InfoMessage(`✅ Construindo ${listaEdificios[cod]}!`, 2000, "success"); break; }
         }
-        
-        for (let code of queue) {
-            const buildButton = this.findBuildButton(code);
-            if (buildButton) {
-                buildButton.click();
-                this.showNotification(`✅ Construindo ${this.BUILDINGS[code]}!`, "success");
-                break;
-            }
-        }
-        
-        this.updateCounters();
+        atualizarContadorFila();
     }
+    function iniciarExecucao() {
+        if (executando) return;
+        if (!obterFilaOrdenada().length) return UI.InfoMessage("Nenhum marcado!", 2000, "error");
+        executando = true;
+        btnIniciar.disabled = true;
+        btnParar.disabled = false;
+        intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value));
+        iniciarContadorRegressivo();
 
-    findBuildButton(code) {
-        const buttons = document.querySelectorAll(`a.btn-build[id^='main_buildlink_${code}_']`);
-        return Array.from(buttons).find(button => 
-            button.offsetParent !== null && !button.classList.contains('disabled')
-        );
+        // 🟢 Mensagem clássica do jogo ao iniciar
+        UI.InfoMessage("Fila de construção iniciada!", 2000, "success");
     }
+    function pararConstruir() {
+        clearInterval(intervaloConstrucao);
+        executando = false;
+        btnIniciar.disabled = false;
+        btnParar.disabled = true;
+        clearInterval(intervaloRegressivo);
 
-    getCurrentQueueCount() {
-        const cancelButtons = document.querySelectorAll("a.btn.btn-cancel");
-        return Array.from(cancelButtons).filter(a => a.href.includes("action=cancel")).length;
+        // 🔴 Mensagem clássica do jogo ao parar
+        UI.InfoMessage("Fila de construção parada!", 2000, "error");
     }
-
-    getOrderedQueue() {
-        return Array.from(this.elements.listContainer.children)
-            .filter(item => item.querySelector("input").checked)
-            .map(item => item.dataset.code);
-    }
-
-    startConstruction() {
-        if (this.state.isRunning) return;
-        
-        const queue = this.getOrderedQueue();
-        if (!queue.length) {
-            this.showNotification("❌ Nenhum item marcado!", "error");
-            return;
-        }
-        
-        this.state.isRunning = true;
-        this.elements.startBtn.disabled = true;
-        this.elements.stopBtn.disabled = false;
-        
-        const delay = Number(this.elements.delaySelect.value);
-        this.state.intervalId = setInterval(() => this.executeConstruction(), delay);
-        this.startCountdown();
-        
-        this.showNotification("🚀 Fila de construção iniciada!", "success");
-    }
-
-    stopConstruction() {
-        if (!this.state.isRunning) return;
-        
-        clearInterval(this.state.intervalId);
-        clearInterval(this.state.countdownInterval);
-        
-        this.state.isRunning = false;
-        this.elements.startBtn.disabled = false;
-        this.elements.stopBtn.disabled = true;
-        this.elements.countdown.textContent = "";
-        
-        this.showNotification("🛑 Fila de construção parada!", "error");
-    }
-
-    startCountdown() {
-        clearInterval(this.state.countdownInterval);
-        this.state.timeRemaining = Number(this.elements.delaySelect.value);
-        
-        this.state.countdownInterval = setInterval(() => {
-            this.state.timeRemaining -= 1000;
-            
-            if (this.state.timeRemaining <= 0) {
-                this.state.timeRemaining = Number(this.elements.delaySelect.value);
-            }
-            
-            const seconds = Math.floor(this.state.timeRemaining / 1000);
-            this.elements.countdown.innerHTML = `⏳ Próxima verificação: <span style="color:#ffa500">${seconds}s</span>`;
+    function iniciarContadorRegressivo() {
+        clearInterval(intervaloRegressivo);
+        tempoRestante = Number(delaySelect.value);
+        intervaloRegressivo = setInterval(() => {
+            tempoRestante -= 1000;
+            if (tempoRestante <= 0) tempoRestante = Number(delaySelect.value);
+            contadorRegressivo.textContent = `⏳ Próxima checagem: ${Math.floor(tempoRestante/1000)}s`;
         }, 1000);
     }
-
-    saveConfiguration() {
-        const config = {
-            delay: this.elements.delaySelect.value,
-            order: Array.from(this.elements.listContainer.children).map(item => item.dataset.code),
-            selected: this.state.items.reduce((acc, item) => {
-                acc[item.dataset.code] = item.querySelector("input").checked;
-                return acc;
-            }, {})
-        };
-        
-        localStorage.setItem(this.CONFIG.storageKey, JSON.stringify(config));
+    function salvarConfiguracao() {
+        localStorage.setItem("filaConstrucaoConfig", JSON.stringify({
+            delay: delaySelect.value,
+            ordem: [...listaContainer.children].map(li => li.dataset.cod),
+            selecionados: listaItens.reduce((a, li) => { a[li.dataset.cod] = li.querySelector("input").checked; return a; }, {})
+        }));
+    }
+    function carregarConfiguracao() {
+        const config = JSON.parse(localStorage.getItem("filaConstrucaoConfig") || "{}");
+        if (config.ordem) config.ordem.forEach(cod => { const li = listaItens.find(i => i.dataset.cod === cod); if (li) listaContainer.appendChild(li); });
+        if (config.selecionados) listaItens.forEach(li => li.querySelector("input").checked = !!config.selecionados[li.dataset.cod]);
+        if (config.delay) delaySelect.value = config.delay;
+        atualizarContadorFila();
+        atualizarTextoBotaoToggle();
     }
 
-    loadConfiguration() {
-        try {
-            const saved = localStorage.getItem(this.CONFIG.storageKey);
-            if (!saved) return;
-            
-            const config = JSON.parse(saved);
-            
-            if (config.order) {
-                config.order.forEach(code => {
-                    const item = this.state.items.find(i => i.dataset.code === code);
-                    if (item) this.elements.listContainer.appendChild(item);
-                });
-            }
-            
-            if (config.selected) {
-                this.state.items.forEach(item => {
-                    item.querySelector("input").checked = !!config.selected[item.dataset.code];
-                });
-            }
-            
-            if (config.delay) {
-                this.elements.delaySelect.value = config.delay;
-            }
-            
-        } catch (error) {
-            console.error("Erro ao carregar configuração:", error);
-        }
-        
-        this.updateCounters();
-        this.updateToggleButtonText();
-    }
+    btnIniciar.onclick = iniciarExecucao;
+    btnParar.onclick = pararConstruir;
+    delaySelect.onchange = () => { 
+        if (executando) { 
+            clearInterval(intervaloConstrucao); 
+            executarConstrucao(); 
+            intervaloConstrucao = setInterval(executarConstrucao, Number(delaySelect.value)); 
+            iniciarContadorRegressivo(); 
+        } 
+    };
+    carregarConfiguracao();
 
-    updateCounters() {
-        const queueCount = this.getCurrentQueueCount();
-        const selectedCount = this.state.items.filter(item => item.querySelector("input").checked).length;
-        
-        this.elements.queueCounter.innerHTML = `🏗️ Fila atual: <span style="color:#${queueCount < 5 ? '90ee90' : 'ff6b6b'}">${queueCount}/5</span>`;
-        this.elements.selectedCounter.innerHTML = `✅ Marcados: <span style="color:#90ee90">${selectedCount}</span>`;
-    }
+    // ===== Função de arrastar painel =====
+    (function habilitarArrastePainel() {
+        const painel = document.querySelector(".twc-painel");
+        const cabecalho = painel.querySelector(".twc-cabecalho");
 
-    updateToggleButtonText() {
-        const allChecked = this.state.items.every(item => item.querySelector("input").checked);
-        this.elements.toggleAllBtn.textContent = allChecked ? "Desmarcar Todos" : "Marcar Todos";
-    }
-
-    toggleAllItems() {
-        const shouldCheck = this.state.items.some(item => !item.querySelector("input").checked);
-        
-        this.state.items.forEach(item => {
-            item.querySelector("input").checked = shouldCheck;
-        });
-        
-        this.updateCounters();
-        this.saveConfiguration();
-        this.updateToggleButtonText();
-    }
-
-    showNotification(message, type) {
-        if (typeof UI !== 'undefined' && UI.InfoMessage) {
-            UI.InfoMessage(message, 2000, type);
-        } else {
-            console.log(`${type}: ${message}`);
-        }
-    }
-
-    closePanel() {
-        if (this.state.isRunning) {
-            this.showNotification("❗ Pare a execução antes de fechar.", "warning");
-            return;
-        }
-        
-        this.stopConstruction();
-        this.elements.panel.remove();
-    }
-
-    setupDragAndDrop() {
-        const header = this.elements.panel.querySelector(".twc-cabecalho");
-        let isDragging = false;
-        let startX, startY, initialX, initialY;
-        
-        header.onmousedown = (e) => {
-            if (e.target.tagName === 'SPAN' && e.target !== header.firstChild) return;
-            
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            
-            const rect = this.elements.panel.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
-            
-            this.elements.panel.style.cursor = 'grabbing';
+        cabecalho.onmousedown = function (e) {
             e.preventDefault();
-        };
-        
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            this.elements.panel.style.left = `${initialX + dx}px`;
-            this.elements.panel.style.top = `${initialY + dy}px`;
-            this.elements.panel.style.right = 'auto';
-        });
-        
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                this.elements.panel.style.cursor = '';
-            }
-        });
-        
-        header.ondragstart = () => false;
-    }
-}
+            let shiftX = e.clientX - painel.getBoundingClientRect().left;
+            let shiftY = e.clientY - painel.getBoundingClientRect().top;
 
-// Inicializar a aplicação
-new ConstructionQueueManager();
+            function moveAt(pageX, pageY) {
+                let newX = pageX - shiftX;
+                let newY = pageY - shiftY;
+                const maxX = window.innerWidth - painel.offsetWidth;
+                const maxY = window.innerHeight - painel.offsetHeight;
+                newX = Math.min(Math.max(0, newX), maxX);
+                newY = Math.min(Math.max(0, newY), maxY);
+                painel.style.left = newX + "px";
+                painel.style.top = newY + "px";
+                painel.style.right = "auto";
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.onmouseup = function () {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.onmouseup = null;
+            };
+        };
+        cabecalho.ondragstart = () => false;
+    })();
+})();
