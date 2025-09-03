@@ -1,7 +1,6 @@
 (function () {
     'use strict';
 
-    // === Rodar apenas em "screen=main" ===
     if (!window.game_data || game_data.screen !== "main") {
         Dialog.show("erro_build", `
             <h3 style="text-align:center;">⚒️ Script de Construção</h3>
@@ -16,7 +15,8 @@
         return;
     }
 
-    // === Inserir CSS isolado ===
+    const STORAGE_KEY = "twBuildState_" + game_data.village.id;
+
     function aplicarEstiloPainel() {
         const style = document.createElement('style');
         style.textContent = `
@@ -51,7 +51,6 @@
     }
     aplicarEstiloPainel();
 
-    // === Criar Painel ===
     const painel = document.createElement("div");
     painel.id = "tw-build-painel";
 
@@ -67,7 +66,6 @@
     painel.appendChild(conteudo);
     document.body.appendChild(painel);
 
-    // === Lista de edifícios ===
     const listaEdificios = {
         main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo", garage: "Oficina",
         watchtower: "Torre de Vigia", smith: "Ferreiro", place: "Praça de Reunião", statue: "Estátua",
@@ -78,23 +76,25 @@
     const listaContainer = document.createElement("div");
     conteudo.appendChild(listaContainer);
 
-    const checkboxes = {};
+    // Recupera estado salvo ou inicia vazio
+    const checkboxes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+
     for (const [cod, nome] of Object.entries(listaEdificios)) {
         const btn = document.createElement("button");
-        btn.className = "tw-build-btn off";
+        const ativo = !!checkboxes[cod];
+        btn.className = ativo ? "tw-build-btn on" : "tw-build-btn off";
         btn.textContent = nome;
         btn.onclick = () => {
             checkboxes[cod] = !checkboxes[cod];
             btn.classList.toggle("on", checkboxes[cod]);
             btn.classList.toggle("off", !checkboxes[cod]);
             UI.InfoMessage(`${nome} ${checkboxes[cod] ? "ativado" : "desativado"}!`, 2000, checkboxes[cod] ? "success" : "error");
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(checkboxes));
         };
         listaContainer.appendChild(btn);
     }
 
-    // === Execução automática (sem botão iniciar) ===
     function executarConstrucao() {
-        // Limite de 5 construções simultâneas
         if ([...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel")).length >= 5) return;
 
         for (let cod of Object.keys(checkboxes).filter(c => checkboxes[c])) {
@@ -107,6 +107,5 @@
         }
     }
 
-    // roda a cada 5s automaticamente
     setInterval(executarConstrucao, 5000);
 })();
