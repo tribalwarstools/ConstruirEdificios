@@ -9,7 +9,7 @@
                 position: fixed; top: 0px; left: 0; background: #2b2b2b; 
                 border: 2px solid #654321; border-left: none; border-radius: 0 10px 10px 0; 
                 box-shadow: 2px 2px 8px #000; font-family: Verdana, sans-serif; color: #f1e1c1; 
-                z-index: 9999; transition: transform 0.3s ease-in-out; transform: translateX(-200px); 
+                z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(-200px); 
             }
             #tw-build-toggle { 
                 position: absolute; top: 0; right: -28px; width: 28px; height: 40px; 
@@ -111,4 +111,5 @@
         ativo = !ativo;
     };
 })();
+
 
