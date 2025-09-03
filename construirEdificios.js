@@ -76,17 +76,11 @@
         listaContainer.appendChild(btn);
     }
 
-    // === Botão iniciar/parar ===
-    const btnIniciar = document.createElement("button");
-    btnIniciar.className = "tw-build-btn";
-    btnIniciar.textContent = "▶️ Iniciar Construção";
-    conteudo.appendChild(btnIniciar);
-
-    const btnParar = document.createElement("button");
-    btnParar.className = "tw-build-btn";
-    btnParar.textContent = "⏹️ Parar";
-    btnParar.disabled = true;
-    conteudo.appendChild(btnParar);
+    // === Botão único (Iniciar/Parar) ===
+    const btnToggle = document.createElement("button");
+    btnToggle.className = "tw-build-btn";
+    btnToggle.textContent = "▶️ Iniciar Construção";
+    conteudo.appendChild(btnToggle);
 
     // === Execução ===
     let intervalo = null;
@@ -99,18 +93,21 @@
         }
     }
 
-    btnIniciar.onclick = () => {
-        btnIniciar.disabled = true;
-        btnParar.disabled = false;
-        intervalo = setInterval(executarConstrucao, 5000); // 5s delay fixo
-        UI.InfoMessage("Fila de construção iniciada!", 2000, "success");
-    };
-    btnParar.onclick = () => {
-        clearInterval(intervalo);
-        btnIniciar.disabled = false;
-        btnParar.disabled = true;
-        UI.InfoMessage("Fila de construção parada!", 2000, "error");
+    let ativo = false;
+    btnToggle.onclick = () => {
+        if (!ativo) {
+            // Iniciar
+            intervalo = setInterval(executarConstrucao, 5000); // 5s fixo
+            btnToggle.textContent = "⏹️ Parar Construção";
+            btnToggle.classList.add("on");
+            UI.InfoMessage("Fila de construção iniciada!", 2000, "success");
+        } else {
+            // Parar
+            clearInterval(intervalo);
+            btnToggle.textContent = "▶️ Iniciar Construção";
+            btnToggle.classList.remove("on");
+            UI.InfoMessage("Fila de construção parada!", 2000, "error");
+        }
+        ativo = !ativo;
     };
 })();
-
-
