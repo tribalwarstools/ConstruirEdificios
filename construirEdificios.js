@@ -1,6 +1,21 @@
 (function () {
     'use strict';
 
+    // === Rodar apenas em "screen=main" ===
+    if (!window.game_data || game_data.screen !== "main") {
+        Dialog.show("erro_build", `
+            <h3 style="text-align:center;">⚒️ Script de Construção</h3>
+            <p style="margin:10px 0; text-align:center; color:#b00;">
+                Este script só funciona na tela de <b>Construções</b>.
+            </p>
+            <div style="text-align:center; margin-top:15px;">
+                <a href="game.php?village=${game_data.village.id}&screen=main" 
+                   class="btn btn-confirm-yes">Ir para Construções</a>
+            </div>
+        `);
+        return;
+    }
+
     // === Inserir CSS isolado ===
     function aplicarEstiloPainel() {
         const style = document.createElement('style');
