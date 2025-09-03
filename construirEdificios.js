@@ -72,44 +72,26 @@
             checkboxes[cod] = !checkboxes[cod];
             btn.classList.toggle("on", checkboxes[cod]);
             btn.classList.toggle("off", !checkboxes[cod]);
+            UI.InfoMessage(`${nome} ${checkboxes[cod] ? "ativado" : "desativado"}!`, 2000, checkboxes[cod] ? "success" : "error");
         };
         listaContainer.appendChild(btn);
     }
 
-    // === Botão único (Iniciar/Parar) ===
-    const btnToggle = document.createElement("button");
-    btnToggle.className = "tw-build-btn";
-    btnToggle.textContent = "▶️ Iniciar Construção";
-    conteudo.appendChild(btnToggle);
-
-    // === Execução ===
-    let intervalo = null;
+    // === Execução automática (sem botão iniciar) ===
     function executarConstrucao() {
+        // Limite de 5 construções simultâneas
         if ([...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel")).length >= 5) return;
+
         for (let cod of Object.keys(checkboxes).filter(c => checkboxes[c])) {
             const botao = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
                 .find(b => b.offsetParent !== null && !b.classList.contains('disabled'));
-            if (botao) { botao.click(); break; }
+            if (botao) { 
+                botao.click(); 
+                break; 
+            }
         }
     }
 
-    let ativo = false;
-    btnToggle.onclick = () => {
-        if (!ativo) {
-            // Iniciar
-            intervalo = setInterval(executarConstrucao, 5000); // 5s fixo
-            btnToggle.textContent = "⏹️ Parar Construção";
-            btnToggle.classList.add("on");
-            UI.InfoMessage("Fila de construção iniciada!", 2000, "success");
-        } else {
-            // Parar
-            clearInterval(intervalo);
-            btnToggle.textContent = "▶️ Iniciar Construção";
-            btnToggle.classList.remove("on");
-            UI.InfoMessage("Fila de construção parada!", 2000, "error");
-        }
-        ativo = !ativo;
-    };
+    // roda a cada 5s automaticamente
+    setInterval(executarConstrucao, 5000);
 })();
-
-
