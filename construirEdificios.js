@@ -43,7 +43,7 @@
                 padding: 6px; cursor: pointer; font-size: 12px; text-align: center; 
             }
             .tw-build-btn.on { background: #2e7d32 !important; }
-            .tw-build-btn.off { background: #8b0000 !important; }
+            .tw-build-btn.off { background: #5c4023 !important; }
             .tw-build-btn:hover { filter: brightness(1.1); }
             #tw-build-painel.ativo { transform: translateX(0); }
         `;
@@ -109,3 +109,4 @@
 
     setInterval(executarConstrucao, 5000);
 })();
+
