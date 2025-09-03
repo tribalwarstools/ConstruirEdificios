@@ -1,252 +1,291 @@
-(function () {
-    // ====== CONFIGURAÇÕES E CONSTANTES ======
-    const CONFIG = {
-        panel: {
-            width: 280,
-            position: { top: 100, right: 20 },
-            colors: {
-                background: '#2e2e2e',
-                border: '#b79755',
-                text: '#f5deb3',
-                header: {
-                    gradient: ['#3a3a3a', '#1e1e1e'],
-                    text: '#f0e2b6'
-                },
-                button: {
-                    background: '#1c1c1c',
-                    hover: '#3a3a3a'
+class ConstructionQueueManager {
+    constructor() {
+        this.CONFIG = {
+            panel: {
+                width: 300,
+                position: { top: 120, right: 25 },
+                colors: {
+                    background: '#2a2a2a',
+                    border: '#c8a971',
+                    text: '#f0d9a8',
+                    header: {
+                        gradient: ['#353535', '#1a1a1a'],
+                        text: '#f5e5c6'
+                    },
+                    button: {
+                        background: '#1e1e1e',
+                        hover: '#3d3d3d',
+                        active: '#4a4a4a'
+                    }
                 }
-            }
-        },
-        delays: [0.5, 1, 2, 3, 5, 10, 15, 30, 60],
-        storageKey: 'filaConstrucaoConfig'
-    };
+            },
+            delays: [0.5, 1, 2, 3, 5, 10, 15, 30, 60],
+            storageKey: 'twConstructionQueueConfig_v2'
+        };
 
-    const BUILDINGS = {
-        main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo", 
-        garage: "Oficina", watchtower: "Torre de Vigia", smith: "Ferreiro", 
-        place: "Praça de Reunião", statue: "Estátua", market: "Mercado", 
-        wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
-        farm: "Fazenda", storage: "Armazém", hide: "Esconderijo", 
-        wall: "Muralha", snob: "Academia"
-    };
+        this.BUILDINGS = {
+            main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo",
+            garage: "Oficina", watchtower: "Torre de Vigia", smith: "Ferreiro",
+            place: "Praça de Reunião", statue: "Estátua", market: "Mercado",
+            wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
+            farm: "Fazenda", storage: "Armazém", hide: "Esconderijo",
+            wall: "Muralha", snob: "Academia"
+        };
 
-    // ====== ESTADO DA APLICAÇÃO ======
-    let state = {
-        isRunning: false,
-        intervalId: null,
-        countdownInterval: null,
-        timeRemaining: 0,
-        items: []
-    };
+        this.state = {
+            isRunning: false,
+            intervalId: null,
+            countdownInterval: null,
+            timeRemaining: 0,
+            items: [],
+            dragSource: null
+        };
 
-    // ====== ELEMENTOS DO DOM ======
-    let elements = {
-        panel: null,
-        listContainer: null,
-        countdown: null,
-        queueCounter: null,
-        selectedCounter: null,
-        startBtn: null,
-        stopBtn: null,
-        delaySelect: null,
-        toggleAllBtn: null
-    };
+        this.elements = {
+            panel: null,
+            listContainer: null,
+            countdown: null,
+            queueCounter: null,
+            selectedCounter: null,
+            startBtn: null,
+            stopBtn: null,
+            delaySelect: null,
+            toggleAllBtn: null
+        };
 
-    // ====== INICIALIZAÇÃO ======
-    function init() {
-        if (!validateScreen()) return;
-        
-        applyStyles();
-        createPanel();
-        setupEventListeners();
-        loadConfiguration();
-        updateQueueCounter();
+        this.init();
     }
 
-    function validateScreen() {
-        const urlBase = game_data.link_base_pure + "main";
+    init() {
+        if (!this.validateScreen()) return;
+        
+        this.applyStyles();
+        this.createPanel();
+        this.setupEventListeners();
+        this.loadConfiguration();
+        this.updateCounters();
+    }
+
+    validateScreen() {
         if (!window.location.href.includes("screen=main")) {
-            showRedirectDialog(urlBase);
+            this.showRedirectDialog();
             return false;
         }
         return true;
     }
 
-    function showRedirectDialog(url) {
-        Dialog.show('redirDialog', `
-            <div style="font-size:12px; text-align:center;">
+    showRedirectDialog() {
+        const url = game_data.link_base_pure + "main";
+        const dialogContent = `
+            <div style="font-size:12px; text-align:center; padding:10px;">
                 <p>Você não está na tela de construções. Deseja ser redirecionado?</p>
-                <div style="margin-top:10px;">
-                    <button id="redirSim" class="btn btn-confirm-yes">Sim</button>
-                    <button id="redirNao" class="btn btn-confirm-no">Não</button>
+                <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+                    <button class="btn btn-confirm-yes" onclick="window.location.href='${url}'">Sim</button>
+                    <button class="btn btn-confirm-no" onclick="Dialog.close()">Não</button>
                 </div>
             </div>
-        `);
+        `;
         
-        $('#redirSim').on('click', () => window.location.href = url);
-        $('#redirNao').on('click', Dialog.close);
+        Dialog.show('redirDialog', dialogContent);
     }
 
-    // ====== ESTILOS ======
-    function applyStyles() {
+    applyStyles() {
         const style = document.createElement('style');
         style.textContent = `
             .twc-painel {
-                background: ${CONFIG.panel.colors.background};
-                border: 2px solid ${CONFIG.panel.colors.border};
-                border-radius: 6px;
-                font-family: Verdana, sans-serif;
+                background: ${this.CONFIG.panel.colors.background};
+                border: 2px solid ${this.CONFIG.panel.colors.border};
+                border-radius: 8px;
+                font-family: 'Segoe UI', Tahoma, sans-serif;
                 font-size: 13px;
-                color: ${CONFIG.panel.colors.text};
-                z-index: 999999;
-                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+                color: ${this.CONFIG.panel.colors.text};
+                z-index: 10000;
+                box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.6);
                 position: fixed;
-                top: ${CONFIG.panel.position.top}px;
-                right: ${CONFIG.panel.position.right}px;
-                width: ${CONFIG.panel.width}px;
+                top: ${this.CONFIG.panel.position.top}px;
+                right: ${this.CONFIG.panel.position.right}px;
+                width: ${this.CONFIG.panel.width}px;
                 user-select: none;
+                backdrop-filter: blur(2px);
             }
             
             .twc-cabecalho {
-                background: linear-gradient(to bottom, ${CONFIG.panel.colors.header.gradient.join(', ')});
-                border-bottom: 1px solid ${CONFIG.panel.colors.border};
-                padding: 8px 12px;
+                background: linear-gradient(to bottom, ${this.CONFIG.panel.colors.header.gradient.join(', ')});
+                border-bottom: 2px solid ${this.CONFIG.panel.colors.border};
+                padding: 10px 15px;
                 font-weight: bold;
                 cursor: move;
-                color: ${CONFIG.panel.colors.header.text};
+                color: ${this.CONFIG.panel.colors.header.text};
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                border-radius: 6px 6px 0 0;
             }
             
             .twc-lista {
                 list-style: none;
-                padding: 6px 12px;
+                padding: 8px 0;
                 margin: 0;
-                max-height: 320px;
+                max-height: 350px;
                 overflow-y: auto;
-                background: ${CONFIG.panel.colors.background};
+                background: ${this.CONFIG.panel.colors.background};
             }
             
             .twc-item {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 6px 6px 6px 0;
-                border-bottom: 1px solid #444;
-                background: ${CONFIG.panel.colors.background};
+                padding: 8px 15px;
+                border-bottom: 1px solid #3a3a3a;
+                background: ${this.CONFIG.panel.colors.background};
                 cursor: grab;
                 font-weight: 600;
                 font-size: 13px;
-                color: ${CONFIG.panel.colors.text};
-                transition: background-color 0.2s ease;
+                color: ${this.CONFIG.panel.colors.text};
+                transition: all 0.2s ease;
             }
             
             .twc-item:hover {
-                background: #3a3a3a;
+                background: #353535;
+                transform: translateX(2px);
+            }
+            
+            .twc-item.dragging {
+                opacity: 0.5;
+                background: #404040;
             }
             
             .twc-btn {
                 font-size: 13px;
-                padding: 4px 6px;
-                border-radius: 4px;
-                border: 1px solid ${CONFIG.panel.colors.border};
-                background-color: ${CONFIG.panel.colors.button.background};
-                color: ${CONFIG.panel.colors.text};
+                padding: 6px 12px;
+                border-radius: 5px;
+                border: 1px solid ${this.CONFIG.panel.colors.border};
+                background-color: ${this.CONFIG.panel.colors.button.background};
+                color: ${this.CONFIG.panel.colors.text};
                 cursor: pointer;
                 font-weight: bold;
-                transition: background-color 0.2s ease;
+                transition: all 0.2s ease;
+                min-width: 80px;
             }
             
             .twc-btn:hover {
-                background-color: ${CONFIG.panel.colors.button.hover};
+                background-color: ${this.CONFIG.panel.colors.button.hover};
+                transform: translateY(-1px);
+            }
+            
+            .twc-btn:active {
+                background-color: ${this.CONFIG.panel.colors.button.active};
+                transform: translateY(0);
             }
             
             .twc-btn:disabled {
-                opacity: 0.6;
+                opacity: 0.5;
                 cursor: not-allowed;
+                transform: none;
             }
             
             .twc-delay-select {
-                padding: 4px 6px;
-                border-radius: 4px;
-                border: 1px solid ${CONFIG.panel.colors.border};
+                padding: 6px 8px;
+                border-radius: 5px;
+                border: 1px solid ${this.CONFIG.panel.colors.border};
                 font-size: 13px;
-                background-color: ${CONFIG.panel.colors.button.background};
-                color: ${CONFIG.panel.colors.text};
+                background-color: ${this.CONFIG.panel.colors.button.background};
+                color: ${this.CONFIG.panel.colors.text};
                 cursor: pointer;
+                width: 100%;
             }
             
             .twc-contador {
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: bold;
-                margin: 6px 12px;
+                margin: 8px 15px;
                 text-align: center;
                 color: #ffd700;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
             
             .twc-botoes {
                 display: flex;
-                gap: 8px;
+                gap: 10px;
                 justify-content: center;
-                margin: 12px;
+                margin: 15px;
+                padding-top: 10px;
+                border-top: 1px solid #3a3a3a;
             }
             
             .twc-flex {
                 display: flex;
-                gap: 8px;
-                margin: 8px 12px;
+                gap: 10px;
+                margin: 10px 15px;
             }
             
             .twc-flex-1 {
                 flex: 1;
             }
+            
+            .twc-checkbox {
+                accent-color: ${this.CONFIG.panel.colors.border};
+                cursor: pointer;
+                transform: scale(1.1);
+            }
+            
+            .twc-section {
+                margin: 10px 0;
+                padding: 0 15px;
+            }
+            
+            .twc-label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: ${this.CONFIG.panel.colors.header.text};
+            }
         `;
         document.head.appendChild(style);
     }
 
-    // ====== CRIAÇÃO DO PAINEL ======
-    function createPanel() {
-        elements.panel = document.createElement("div");
-        elements.panel.className = "twc-painel";
+    createPanel() {
+        this.elements.panel = document.createElement("div");
+        this.elements.panel.className = "twc-painel";
         
-        createHeader();
-        createList();
-        createControls();
-        createCounters();
-        createButtons();
+        this.createHeader();
+        this.createList();
+        this.createControls();
+        this.createCounters();
+        this.createButtons();
         
-        document.body.appendChild(elements.panel);
-        setupDragAndDrop();
+        document.body.appendChild(this.elements.panel);
+        this.setupDragAndDrop();
     }
 
-    function createHeader() {
+    createHeader() {
         const header = document.createElement("div");
         header.className = "twc-cabecalho";
         header.innerHTML = `
             <span>🏗️ Fila de Construção</span>
-            <span style="cursor:pointer;" title="Fechar painel">✖</span>
+            <span style="cursor:pointer; font-size:16px;" title="Fechar painel">✖</span>
         `;
         
-        header.lastChild.onclick = closePanel;
-        elements.panel.appendChild(header);
+        header.lastChild.onclick = () => this.closePanel();
+        this.elements.panel.appendChild(header);
     }
 
-    function createList() {
-        elements.listContainer = document.createElement("ul");
-        elements.listContainer.className = "twc-lista";
+    createList() {
+        this.elements.listContainer = document.createElement("ul");
+        this.elements.listContainer.className = "twc-lista";
         
-        Object.entries(BUILDINGS).forEach(([code, name]) => {
-            const item = createListItem(code, name);
-            elements.listContainer.appendChild(item);
-            state.items.push(item);
+        Object.entries(this.BUILDINGS).forEach(([code, name]) => {
+            const item = this.createListItem(code, name);
+            this.elements.listContainer.appendChild(item);
+            this.state.items.push(item);
         });
         
-        elements.panel.appendChild(elements.listContainer);
+        this.elements.panel.appendChild(this.elements.listContainer);
     }
 
-    function createListItem(code, name) {
+    createListItem(code, name) {
         const li = document.createElement("li");
         li.className = "twc-item";
         li.dataset.code = code;
@@ -256,352 +295,353 @@
         
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.onchange = handleCheckboxChange;
+        checkbox.className = "twc-checkbox";
+        checkbox.onchange = () => this.handleCheckboxChange();
         
         li.append(span, checkbox);
-        setupListItemDrag(li);
+        this.setupListItemDrag(li);
         
         return li;
     }
 
-    function setupListItemDrag(item) {
+    setupListItemDrag(item) {
         item.draggable = true;
         
         item.ondragstart = (e) => {
+            this.state.dragSource = item;
             e.dataTransfer.setData("text/plain", item.dataset.code);
-            item.style.opacity = "0.5";
+            item.classList.add("dragging");
         };
         
-        item.ondragend = () => item.style.opacity = "1";
-        item.ondrop = handleItemDrop;
+        item.ondragend = () => {
+            item.classList.remove("dragging");
+            this.state.dragSource = null;
+        };
+        
         item.ondragover = (e) => e.preventDefault();
+        item.ondrop = (e) => this.handleItemDrop(e, item);
     }
 
-    function createControls() {
-        const controlsWrapper = document.createElement("div");
-        controlsWrapper.className = "twc-flex";
+    createControls() {
+        // Toggle all button
+        const toggleWrapper = document.createElement("div");
+        toggleWrapper.className = "twc-flex";
         
-        // Botão Marcar/Desmarcar Todos
-        elements.toggleAllBtn = document.createElement("button");
-        elements.toggleAllBtn.className = "twc-btn twc-flex-1";
-        elements.toggleAllBtn.textContent = "Marcar Todos";
-        elements.toggleAllBtn.onclick = toggleAllItems;
+        this.elements.toggleAllBtn = document.createElement("button");
+        this.elements.toggleAllBtn.className = "twc-btn twc-flex-1";
+        this.elements.toggleAllBtn.textContent = "Marcar Todos";
+        this.elements.toggleAllBtn.onclick = () => this.toggleAllItems();
         
-        // Botão Salvar
         const saveBtn = document.createElement("button");
         saveBtn.className = "twc-btn twc-flex-1";
         saveBtn.textContent = "💾 Salvar";
-        saveBtn.onclick = saveConfiguration;
+        saveBtn.onclick = () => this.saveConfiguration();
         
-        controlsWrapper.append(elements.toggleAllBtn, saveBtn);
-        elements.panel.appendChild(controlsWrapper);
+        toggleWrapper.append(this.elements.toggleAllBtn, saveBtn);
+        this.elements.panel.appendChild(toggleWrapper);
         
-        // Seletor de delay
+        // Delay selector
         const delayWrapper = document.createElement("div");
-        delayWrapper.style.margin = "12px";
-        delayWrapper.innerHTML = `<label style="font-weight:600;">Checar daqui a: </label>`;
+        delayWrapper.className = "twc-section";
         
-        elements.delaySelect = document.createElement("select");
-        elements.delaySelect.className = "twc-delay-select";
+        const label = document.createElement("label");
+        label.className = "twc-label";
+        label.textContent = "Intervalo de verificação:";
         
-        CONFIG.delays.forEach(min => {
+        this.elements.delaySelect = document.createElement("select");
+        this.elements.delaySelect.className = "twc-delay-select";
+        
+        this.CONFIG.delays.forEach(min => {
             const option = document.createElement("option");
             option.value = min * 60000;
             option.textContent = min === 0.5 ? "30 segundos" : `${min} minuto${min > 1 ? "s" : ""}`;
-            elements.delaySelect.appendChild(option);
+            this.elements.delaySelect.appendChild(option);
         });
         
-        delayWrapper.appendChild(elements.delaySelect);
-        elements.panel.appendChild(delayWrapper);
+        delayWrapper.append(label, this.elements.delaySelect);
+        this.elements.panel.appendChild(delayWrapper);
     }
 
-    function createCounters() {
-        elements.countdown = document.createElement("div");
-        elements.countdown.className = "twc-contador";
+    createCounters() {
+        this.elements.countdown = document.createElement("div");
+        this.elements.countdown.className = "twc-contador";
         
-        elements.queueCounter = document.createElement("div");
-        elements.queueCounter.className = "twc-contador";
+        this.elements.queueCounter = document.createElement("div");
+        this.elements.queueCounter.className = "twc-contador";
         
-        elements.selectedCounter = document.createElement("div");
-        elements.selectedCounter.className = "twc-contador";
+        this.elements.selectedCounter = document.createElement("div");
+        this.elements.selectedCounter.className = "twc-contador";
         
-        elements.panel.append(elements.countdown, elements.queueCounter, elements.selectedCounter);
+        this.elements.panel.append(
+            this.elements.countdown,
+            this.elements.queueCounter,
+            this.elements.selectedCounter
+        );
     }
 
-    function createButtons() {
+    createButtons() {
         const buttonsWrapper = document.createElement("div");
         buttonsWrapper.className = "twc-botoes";
         
-        elements.startBtn = document.createElement("button");
-        elements.startBtn.className = "twc-btn";
-        elements.startBtn.textContent = "▶️ Iniciar";
-        elements.startBtn.onclick = startConstruction;
+        this.elements.startBtn = document.createElement("button");
+        this.elements.startBtn.className = "twc-btn";
+        this.elements.startBtn.textContent = "▶️ Iniciar";
+        this.elements.startBtn.onclick = () => this.startConstruction();
         
-        elements.stopBtn = document.createElement("button");
-        elements.stopBtn.className = "twc-btn";
-        elements.stopBtn.textContent = "⏹️ Parar";
-        elements.stopBtn.disabled = true;
-        elements.stopBtn.onclick = stopConstruction;
+        this.elements.stopBtn = document.createElement("button");
+        this.elements.stopBtn.className = "twc-btn";
+        this.elements.stopBtn.textContent = "⏹️ Parar";
+        this.elements.stopBtn.disabled = true;
+        this.elements.stopBtn.onclick = () => this.stopConstruction();
         
-        buttonsWrapper.append(elements.startBtn, elements.stopBtn);
-        elements.panel.appendChild(buttonsWrapper);
+        buttonsWrapper.append(this.elements.startBtn, this.elements.stopBtn);
+        this.elements.panel.appendChild(buttonsWrapper);
     }
 
-    // ====== MANIPULAÇÃO DE EVENTOS ======
-    function setupEventListeners() {
-        elements.delaySelect.onchange = handleDelayChange;
+    handleCheckboxChange() {
+        this.updateCounters();
+        this.saveConfiguration();
+        this.updateToggleButtonText();
     }
 
-    function handleCheckboxChange() {
-        updateQueueCounter();
-        saveConfiguration();
-        updateToggleButtonText();
-    }
-
-    function handleItemDrop(e) {
+    handleItemDrop(e, targetItem) {
         e.preventDefault();
-        const draggedCode = e.dataTransfer.getData("text/plain");
-        const targetCode = e.currentTarget.dataset.code;
+        if (!this.state.dragSource || this.state.dragSource === targetItem) return;
         
-        if (draggedCode === targetCode) return;
+        const allItems = Array.from(this.elements.listContainer.children);
+        const sourceIndex = allItems.indexOf(this.state.dragSource);
+        const targetIndex = allItems.indexOf(targetItem);
         
-        const draggedItem = state.items.find(item => item.dataset.code === draggedCode);
-        elements.listContainer.insertBefore(draggedItem, e.currentTarget);
-        saveConfiguration();
+        if (sourceIndex < targetIndex) {
+            this.elements.listContainer.insertBefore(this.state.dragSource, targetItem.nextSibling);
+        } else {
+            this.elements.listContainer.insertBefore(this.state.dragSource, targetItem);
+        }
+        
+        this.saveConfiguration();
     }
 
-    function handleDelayChange() {
-        if (!state.isRunning) return;
-        
-        clearInterval(state.intervalId);
-        executeConstruction();
-        state.intervalId = setInterval(executeConstruction, Number(elements.delaySelect.value));
-        startCountdown();
-    }
-
-    // ====== LÓGICA DE CONSTRUÇÃO ======
-    function executeConstruction() {
-        if (getCurrentQueueCount() >= 5) {
-            showNotification("⛔ Fila cheia. Aguardando...", "warning");
+    executeConstruction() {
+        if (this.getCurrentQueueCount() >= 5) {
+            this.showNotification("⛔ Fila cheia. Aguardando...", "warning");
             return;
         }
         
-        const queue = getOrderedQueue();
+        const queue = this.getOrderedQueue();
         if (!queue.length) {
-            stopConstruction();
+            this.stopConstruction();
             return;
         }
         
         for (let code of queue) {
-            const buildButton = findBuildButton(code);
+            const buildButton = this.findBuildButton(code);
             if (buildButton) {
                 buildButton.click();
-                showNotification(`✅ Construindo ${BUILDINGS[code]}!`, "success");
+                this.showNotification(`✅ Construindo ${this.BUILDINGS[code]}!`, "success");
                 break;
             }
         }
         
-        updateQueueCounter();
+        this.updateCounters();
     }
 
-    function findBuildButton(code) {
+    findBuildButton(code) {
         const buttons = document.querySelectorAll(`a.btn-build[id^='main_buildlink_${code}_']`);
         return Array.from(buttons).find(button => 
             button.offsetParent !== null && !button.classList.contains('disabled')
         );
     }
 
-    function getCurrentQueueCount() {
+    getCurrentQueueCount() {
         const cancelButtons = document.querySelectorAll("a.btn.btn-cancel");
         return Array.from(cancelButtons).filter(a => a.href.includes("action=cancel")).length;
     }
 
-    function getOrderedQueue() {
-        return Array.from(elements.listContainer.children)
+    getOrderedQueue() {
+        return Array.from(this.elements.listContainer.children)
             .filter(item => item.querySelector("input").checked)
             .map(item => item.dataset.code);
     }
 
-    // ====== CONTROLES DE EXECUÇÃO ======
-    function startConstruction() {
-        if (state.isRunning) return;
+    startConstruction() {
+        if (this.state.isRunning) return;
         
-        const queue = getOrderedQueue();
+        const queue = this.getOrderedQueue();
         if (!queue.length) {
-            showNotification("Nenhum item marcado!", "error");
+            this.showNotification("❌ Nenhum item marcado!", "error");
             return;
         }
         
-        state.isRunning = true;
-        elements.startBtn.disabled = true;
-        elements.stopBtn.disabled = false;
+        this.state.isRunning = true;
+        this.elements.startBtn.disabled = true;
+        this.elements.stopBtn.disabled = false;
         
-        const delay = Number(elements.delaySelect.value);
-        state.intervalId = setInterval(executeConstruction, delay);
-        startCountdown();
+        const delay = Number(this.elements.delaySelect.value);
+        this.state.intervalId = setInterval(() => this.executeConstruction(), delay);
+        this.startCountdown();
         
-        showNotification("Fila de construção iniciada!", "success");
+        this.showNotification("🚀 Fila de construção iniciada!", "success");
     }
 
-    function stopConstruction() {
-        if (!state.isRunning) return;
+    stopConstruction() {
+        if (!this.state.isRunning) return;
         
-        clearInterval(state.intervalId);
-        clearInterval(state.countdownInterval);
+        clearInterval(this.state.intervalId);
+        clearInterval(this.state.countdownInterval);
         
-        state.isRunning = false;
-        elements.startBtn.disabled = false;
-        elements.stopBtn.disabled = true;
-        elements.countdown.textContent = "";
+        this.state.isRunning = false;
+        this.elements.startBtn.disabled = false;
+        this.elements.stopBtn.disabled = true;
+        this.elements.countdown.textContent = "";
         
-        showNotification("Fila de construção parada!", "error");
+        this.showNotification("🛑 Fila de construção parada!", "error");
     }
 
-    // ====== CONTADOR REGRESSIVO ======
-    function startCountdown() {
-        clearInterval(state.countdownInterval);
-        state.timeRemaining = Number(elements.delaySelect.value);
+    startCountdown() {
+        clearInterval(this.state.countdownInterval);
+        this.state.timeRemaining = Number(this.elements.delaySelect.value);
         
-        state.countdownInterval = setInterval(() => {
-            state.timeRemaining -= 1000;
+        this.state.countdownInterval = setInterval(() => {
+            this.state.timeRemaining -= 1000;
             
-            if (state.timeRemaining <= 0) {
-                state.timeRemaining = Number(elements.delaySelect.value);
+            if (this.state.timeRemaining <= 0) {
+                this.state.timeRemaining = Number(this.elements.delaySelect.value);
             }
             
-            elements.countdown.textContent = `⏳ Próxima checagem: ${Math.floor(state.timeRemaining/1000)}s`;
+            const seconds = Math.floor(this.state.timeRemaining / 1000);
+            this.elements.countdown.innerHTML = `⏳ Próxima verificação: <span style="color:#ffa500">${seconds}s</span>`;
         }, 1000);
     }
 
-    // ====== GERENCIAMENTO DE CONFIGURAÇÃO ======
-    function saveConfiguration() {
+    saveConfiguration() {
         const config = {
-            delay: elements.delaySelect.value,
-            order: Array.from(elements.listContainer.children).map(item => item.dataset.code),
-            selected: state.items.reduce((acc, item) => {
+            delay: this.elements.delaySelect.value,
+            order: Array.from(this.elements.listContainer.children).map(item => item.dataset.code),
+            selected: this.state.items.reduce((acc, item) => {
                 acc[item.dataset.code] = item.querySelector("input").checked;
                 return acc;
             }, {})
         };
         
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(config));
+        localStorage.setItem(this.CONFIG.storageKey, JSON.stringify(config));
     }
 
-    function loadConfiguration() {
+    loadConfiguration() {
         try {
-            const saved = localStorage.getItem(CONFIG.storageKey);
+            const saved = localStorage.getItem(this.CONFIG.storageKey);
             if (!saved) return;
             
             const config = JSON.parse(saved);
             
             if (config.order) {
                 config.order.forEach(code => {
-                    const item = state.items.find(i => i.dataset.code === code);
-                    if (item) elements.listContainer.appendChild(item);
+                    const item = this.state.items.find(i => i.dataset.code === code);
+                    if (item) this.elements.listContainer.appendChild(item);
                 });
             }
             
             if (config.selected) {
-                state.items.forEach(item => {
+                this.state.items.forEach(item => {
                     item.querySelector("input").checked = !!config.selected[item.dataset.code];
                 });
             }
             
             if (config.delay) {
-                elements.delaySelect.value = config.delay;
+                this.elements.delaySelect.value = config.delay;
             }
             
         } catch (error) {
             console.error("Erro ao carregar configuração:", error);
         }
         
-        updateQueueCounter();
-        updateToggleButtonText();
+        this.updateCounters();
+        this.updateToggleButtonText();
     }
 
-    // ====== UTILITÁRIOS ======
-    function updateQueueCounter() {
-        const queueCount = getCurrentQueueCount();
-        const selectedCount = state.items.filter(item => item.querySelector("input").checked).length;
+    updateCounters() {
+        const queueCount = this.getCurrentQueueCount();
+        const selectedCount = this.state.items.filter(item => item.querySelector("input").checked).length;
         
-        elements.queueCounter.textContent = `🏗️ Construções na fila: ${queueCount}`;
-        elements.selectedCounter.textContent = `✅ Itens marcados: ${selectedCount}`;
+        this.elements.queueCounter.innerHTML = `🏗️ Fila atual: <span style="color:#${queueCount < 5 ? '90ee90' : 'ff6b6b'}">${queueCount}/5</span>`;
+        this.elements.selectedCounter.innerHTML = `✅ Marcados: <span style="color:#90ee90">${selectedCount}</span>`;
     }
 
-    function updateToggleButtonText() {
-        const allChecked = state.items.every(item => item.querySelector("input").checked);
-        elements.toggleAllBtn.textContent = allChecked ? "Desmarcar Todos" : "Marcar Todos";
+    updateToggleButtonText() {
+        const allChecked = this.state.items.every(item => item.querySelector("input").checked);
+        this.elements.toggleAllBtn.textContent = allChecked ? "Desmarcar Todos" : "Marcar Todos";
     }
 
-    function toggleAllItems() {
-        const shouldCheck = state.items.some(item => !item.querySelector("input").checked);
+    toggleAllItems() {
+        const shouldCheck = this.state.items.some(item => !item.querySelector("input").checked);
         
-        state.items.forEach(item => {
+        this.state.items.forEach(item => {
             item.querySelector("input").checked = shouldCheck;
         });
         
-        updateQueueCounter();
-        saveConfiguration();
-        updateToggleButtonText();
+        this.updateCounters();
+        this.saveConfiguration();
+        this.updateToggleButtonText();
     }
 
-    function showNotification(message, type) {
-        UI.InfoMessage(message, 2000, type);
+    showNotification(message, type) {
+        if (typeof UI !== 'undefined' && UI.InfoMessage) {
+            UI.InfoMessage(message, 2000, type);
+        } else {
+            console.log(`${type}: ${message}`);
+        }
     }
 
-    function closePanel() {
-        if (state.isRunning) {
-            showNotification("❗ Pare a execução antes de fechar.", "warning");
+    closePanel() {
+        if (this.state.isRunning) {
+            this.showNotification("❗ Pare a execução antes de fechar.", "warning");
             return;
         }
         
-        stopConstruction();
-        elements.panel.remove();
+        this.stopConstruction();
+        this.elements.panel.remove();
     }
 
-    // ====== ARRASTAR PAINEL ======
-    function setupDragAndDrop() {
-        const header = elements.panel.querySelector(".twc-cabecalho");
+    setupDragAndDrop() {
+        const header = this.elements.panel.querySelector(".twc-cabecalho");
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
         
-        header.onmousedown = function(e) {
+        header.onmousedown = (e) => {
             if (e.target.tagName === 'SPAN' && e.target !== header.firstChild) return;
             
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = this.elements.panel.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            
+            this.elements.panel.style.cursor = 'grabbing';
             e.preventDefault();
-            
-            const initialX = e.clientX - elements.panel.getBoundingClientRect().left;
-            const initialY = e.clientY - elements.panel.getBoundingClientRect().top;
-            
-            function movePanel(pageX, pageY) {
-                let newX = pageX - initialX;
-                let newY = pageY - initialY;
-                
-                const maxX = window.innerWidth - elements.panel.offsetWidth;
-                const maxY = window.innerHeight - elements.panel.offsetHeight;
-                
-                newX = Math.max(0, Math.min(newX, maxX));
-                newY = Math.max(0, Math.min(newY, maxY));
-                
-                elements.panel.style.left = newX + "px";
-                elements.panel.style.top = newY + "px";
-                elements.panel.style.right = "auto";
-            }
-            
-            function onMouseMove(e) {
-                movePanel(e.pageX, e.pageY);
-            }
-            
-            function onMouseUp() {
-                document.removeEventListener("mousemove", onMouseMove);
-                document.removeEventListener("mouseup", onMouseUp);
-            }
-            
-            document.addEventListener("mousemove", onMouseMove);
-            document.addEventListener("mouseup", onMouseUp);
         };
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            this.elements.panel.style.left = `${initialX + dx}px`;
+            this.elements.panel.style.top = `${initialY + dy}px`;
+            this.elements.panel.style.right = 'auto';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                this.elements.panel.style.cursor = '';
+            }
+        });
         
         header.ondragstart = () => false;
     }
+}
 
-    // ====== INICIAR APLICAÇÃO ======
-    init();
-})();
+// Inicializar a aplicação
+new ConstructionQueueManager();
