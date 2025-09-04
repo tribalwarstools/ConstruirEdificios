@@ -66,17 +66,17 @@
     painel.appendChild(conteudo);
     document.body.appendChild(painel);
 
+    // Lista de edifícios sem Torre de Vigia e Esconderijo
     const listaEdificios = {
         main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo", garage: "Oficina",
-        watchtower: "Torre de Vigia", smith: "Ferreiro", place: "Praça de Reunião", statue: "Estátua",
+        smith: "Ferreiro", place: "Praça de Reunião", statue: "Estátua",
         market: "Mercado", wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
-        farm: "Fazenda", storage: "Armazém", hide: "Esconderijo", wall: "Muralha", snob: "Academia"
+        farm: "Fazenda", storage: "Armazém", wall: "Muralha", snob: "Academia"
     };
 
     const listaContainer = document.createElement("div");
     conteudo.appendChild(listaContainer);
 
-    // Recupera estado salvo ou inicia vazio
     const checkboxes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
     for (const [cod, nome] of Object.entries(listaEdificios)) {
@@ -109,4 +109,3 @@
 
     setInterval(executarConstrucao, 5000);
 })();
-
