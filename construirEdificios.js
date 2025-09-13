@@ -25,7 +25,7 @@
                 position: fixed; top: 50px; right: 0; background: #2b2b2b; 
                 border: 2px solid #654321; border-right: none; border-radius: 10px 0 0 10px; 
                 box-shadow: -2px 2px 8px #000; font-family: Verdana, sans-serif; color: #f1e1c1; 
-                z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(220px); 
+                z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(200px); 
             }
             #tw-build-toggle { 
                 position: absolute; top: 0; left: -28px; width: 28px; height: 40px; 
@@ -72,11 +72,27 @@
     painel.appendChild(conteudo);
     document.body.appendChild(painel);
 
+    // ✅ Lista de edifícios (com os novos incluídos)
     const listaEdificios = {
-        main: "Edifício Principal", barracks: "Quartel", stable: "Estábulo", garage: "Oficina",
-        smith: "Ferreiro", place: "Praça de Reunião", statue: "Estátua",
-        market: "Mercado", wood: "Bosque", stone: "Poço de Argila", iron: "Mina de Ferro",
-        farm: "Fazenda", storage: "Armazém", wall: "Muralha", snob: "Academia"
+        main: "Edifício Principal",
+        barracks: "Quartel",
+        stable: "Estábulo",
+        garage: "Oficina",
+        smith: "Ferreiro",
+        place: "Praça de Reunião",
+        statue: "Estátua",
+        market: "Mercado",
+        wood: "Bosque",
+        stone: "Poço de Argila",
+        iron: "Mina de Ferro",
+        farm: "Fazenda",
+        storage: "Armazém",
+        wall: "Muralha",
+        snob: "Academia",
+        church_f: "Primeira Igreja",  // novo
+        church: "Igreja",             // novo
+        watchtower: "Torre de Vigia", // novo
+        hide: "Esconderijo"           // novo
     };
 
     const listaContainer = document.createElement("div");
@@ -92,6 +108,7 @@
         listaContainer.innerHTML = "";
         for (const cod of ordem) {
             const nome = listaEdificios[cod];
+            if (!nome) continue; // ignora se não existir
             const item = document.createElement("div");
             item.className = "tw-build-item";
             item.draggable = true;
@@ -107,7 +124,7 @@
 
             const lbl = document.createElement("label");
             lbl.className = "tw-build-label";
-            lbl.textContent = nome;
+            lbl.textContent = nome + " (0)"; // pontuação/valor inicial = 0
 
             item.appendChild(chk);
             item.appendChild(lbl);
@@ -164,5 +181,3 @@
         }
     }
 })();
-
-
