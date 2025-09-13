@@ -17,6 +17,7 @@
 
     const STORAGE_KEY = "twBuildState_" + game_data.village.id;
     const ORDER_KEY = "twBuildOrder_" + game_data.village.id;
+    let intervalo = null;
 
     function aplicarEstiloPainel() {
         const style = document.createElement('style');
@@ -72,7 +73,7 @@
     painel.appendChild(conteudo);
     document.body.appendChild(painel);
 
-    // ✅ Lista de edifícios (com os novos incluídos)
+    // ✅ Lista de edifícios
     const listaEdificios = {
         main: "Edifício Principal",
         barracks: "Quartel",
@@ -89,10 +90,10 @@
         storage: "Armazém",
         wall: "Muralha",
         snob: "Academia",
-        church_f: "Primeira Igreja",  // novo
-        church: "Igreja",             // novo
-        watchtower: "Torre de Vigia", // novo
-        hide: "Esconderijo"           // novo
+        church_f: "Primeira Igreja",
+        church: "Igreja",
+        watchtower: "Torre de Vigia",
+        hide: "Esconderijo"
     };
 
     const listaContainer = document.createElement("div");
@@ -108,7 +109,7 @@
         listaContainer.innerHTML = "";
         for (const cod of ordem) {
             const nome = listaEdificios[cod];
-            if (!nome) continue; // ignora se não existir
+            if (!nome) continue;
             const item = document.createElement("div");
             item.className = "tw-build-item";
             item.draggable = true;
@@ -124,16 +125,14 @@
 
             const lbl = document.createElement("label");
             lbl.className = "tw-build-label";
-            lbl.textContent = nome + " (0)"; // pontuação/valor inicial = 0
+            lbl.textContent = nome + " (0)";
 
             item.appendChild(chk);
             item.appendChild(lbl);
             listaContainer.appendChild(item);
 
             // drag & drop
-            item.addEventListener("dragstart", () => {
-                item.classList.add("dragging");
-            });
+            item.addEventListener("dragstart", () => item.classList.add("dragging"));
             item.addEventListener("dragend", () => {
                 item.classList.remove("dragging");
                 salvarOrdem();
@@ -163,20 +162,31 @@
 
     montarLista();
 
-    // botão executar
+    // botão iniciar/parar
     const btnExec = document.createElement("button");
     btnExec.id = "tw-build-btn-executar";
-    btnExec.textContent = "🚀 Construir";
-    btnExec.onclick = executarConstrucao;
+    btnExec.textContent = "▶️ Iniciar";
     conteudo.appendChild(btnExec);
+
+    btnExec.onclick = () => {
+        if (intervalo) {
+            clearInterval(intervalo);
+            intervalo = null;
+            btnExec.textContent = "▶️ Iniciar";
+        } else {
+            executarConstrucao(); // tenta logo no início
+            intervalo = setInterval(executarConstrucao, 5000);
+            btnExec.textContent = "⏹️ Parar";
+        }
+    };
 
     function executarConstrucao() {
         for (let cod of ordem.filter(c => checks[c])) {
             const botao = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
                 .find(b => b.offsetParent !== null && !b.classList.contains('disabled'));
-            if (botao) { 
-                botao.click(); 
-                break; 
+            if (botao) {
+                botao.click();
+                break;
             }
         }
     }
