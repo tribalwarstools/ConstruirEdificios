@@ -174,10 +174,10 @@
 
     function atualizarBotaoRodando(rodando) {
         if (rodando) {
-            btnExec.textContent = "⏹️ Parar";
+            btnExec.textContent = "Parar";
             localStorage.setItem(BTN_KEY, "on");
         } else {
-            btnExec.textContent = "▶️ Iniciar";
+            btnExec.textContent = "Iniciar";
             localStorage.setItem(BTN_KEY, "off");
         }
     }
@@ -214,3 +214,4 @@
     }
 
 })();
+
