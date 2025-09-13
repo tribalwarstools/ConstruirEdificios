@@ -15,10 +15,13 @@
         return;
     }
 
-    const STORAGE_KEY = "twBuildState_" + game_data.village.id;
-    const ORDER_KEY = "twBuildOrder_" + game_data.village.id;
+    const STORAGE_KEY = "twBuildState_" + game_data.village.id;   // estado dos checkboxes
+    const ORDER_KEY   = "twBuildOrder_" + game_data.village.id;   // ordem da lista
+    const BTN_KEY     = "twBuildBtn_" + game_data.village.id;     // estado do botão iniciar/parar
+
     let intervalo = null;
 
+    // ========= ESTILO =========
     function aplicarEstiloPainel() {
         const style = document.createElement('style');
         style.textContent = `
@@ -41,8 +44,7 @@
             }
             #tw-build-lista { 
                 margin: 8px 0; 
-                max-height: 300px;    /* altura máxima visível */
-                overflow-y: auto;     /* rolagem vertical */
+                max-height: 300px; overflow-y: auto;
             }
             .tw-build-item { 
                 display: flex; align-items: center; justify-content: flex-start;
@@ -62,6 +64,7 @@
     }
     aplicarEstiloPainel();
 
+    // ========= PAINEL =========
     const painel = document.createElement("div");
     painel.id = "tw-build-painel";
 
@@ -77,7 +80,7 @@
     painel.appendChild(conteudo);
     document.body.appendChild(painel);
 
-    // ✅ Lista de edifícios
+    // ========= LISTA DE EDIFÍCIOS =========
     const listaEdificios = {
         main: "Edifício Principal",
         barracks: "Quartel",
@@ -108,7 +111,6 @@
     let ordem = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
     if (ordem.length === 0) ordem = Object.keys(listaEdificios);
 
-    // montar lista
     function montarLista() {
         listaContainer.innerHTML = "";
         for (const cod of ordem) {
@@ -135,7 +137,6 @@
             item.appendChild(lbl);
             listaContainer.appendChild(item);
 
-            // drag & drop
             item.addEventListener("dragstart", () => item.classList.add("dragging"));
             item.addEventListener("dragend", () => {
                 item.classList.remove("dragging");
@@ -166,21 +167,30 @@
 
     montarLista();
 
-    // botão iniciar/parar
+    // ========= BOTÃO EXECUTAR =========
     const btnExec = document.createElement("button");
     btnExec.id = "tw-build-btn-executar";
-    btnExec.textContent = "▶️ Iniciar";
     conteudo.appendChild(btnExec);
+
+    function atualizarBotaoRodando(rodando) {
+        if (rodando) {
+            btnExec.textContent = "⏹️ Parar";
+            localStorage.setItem(BTN_KEY, "on");
+        } else {
+            btnExec.textContent = "▶️ Iniciar";
+            localStorage.setItem(BTN_KEY, "off");
+        }
+    }
 
     btnExec.onclick = () => {
         if (intervalo) {
             clearInterval(intervalo);
             intervalo = null;
-            btnExec.textContent = "▶️ Iniciar";
+            atualizarBotaoRodando(false);
         } else {
-            executarConstrucao(); // tenta logo no início
+            executarConstrucao();
             intervalo = setInterval(executarConstrucao, 5000);
-            btnExec.textContent = "⏹️ Parar";
+            atualizarBotaoRodando(true);
         }
     };
 
@@ -194,4 +204,13 @@
             }
         }
     }
+
+    // ========= RESTAURAR ESTADO =========
+    if (localStorage.getItem(BTN_KEY) === "on") {
+        intervalo = setInterval(executarConstrucao, 5000);
+        atualizarBotaoRodando(true);
+    } else {
+        atualizarBotaoRodando(false);
+    }
+
 })();
