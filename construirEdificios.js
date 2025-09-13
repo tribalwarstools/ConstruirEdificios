@@ -23,7 +23,7 @@
         const style = document.createElement('style');
         style.textContent = `
             #tw-build-painel { 
-                position: fixed; top: 50px; right: 0; background: #2b2b2b; 
+                position: fixed; top: 0px; right: 0; background: #2b2b2b; 
                 border: 2px solid #654321; border-right: none; border-radius: 10px 0 0 10px; 
                 box-shadow: -2px 2px 8px #000; font-family: Verdana, sans-serif; color: #f1e1c1; 
                 z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(220px); 
@@ -191,5 +191,6 @@
         }
     }
 })();
+
 
 
