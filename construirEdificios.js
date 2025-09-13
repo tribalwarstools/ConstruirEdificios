@@ -25,7 +25,7 @@
                 position: fixed; top: 50px; right: 0; background: #2b2b2b; 
                 border: 2px solid #654321; border-right: none; border-radius: 10px 0 0 10px; 
                 box-shadow: -2px 2px 8px #000; font-family: Verdana, sans-serif; color: #f1e1c1; 
-                z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(180px); 
+                z-index: 9999999; transition: transform 0.3s ease-in-out; transform: translateX(220px); 
             }
             #tw-build-toggle { 
                 position: absolute; top: 0; left: -28px; width: 28px; height: 40px; 
@@ -164,4 +164,5 @@
         }
     }
 })();
+
 
