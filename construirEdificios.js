@@ -16,6 +16,7 @@
     }
 
     const STORAGE_KEY = "twBuildState_" + game_data.village.id;
+    const ORDER_KEY = "twBuildOrder_" + game_data.village.id;
 
     function aplicarEstiloPainel() {
         const style = document.createElement('style');
@@ -32,19 +33,24 @@
                 border-radius: 6px 0 0 6px; color: #f1e1c1; display: flex; align-items: center; 
                 justify-content: center; cursor: pointer; font-size: 16px; box-shadow: -2px 2px 6px #000; 
             }
-            #tw-build-conteudo { padding: 8px; width: 180px; }
+            #tw-build-conteudo { padding: 8px; width: 200px; }
             #tw-build-conteudo h4 { 
                 margin: 0 0 6px 0; font-size: 13px; text-align: center; 
                 border-bottom: 1px solid #654321; padding-bottom: 4px; 
             }
-            .tw-build-btn { 
-                display: block; width: 100%; margin: 5px 0; background: #5c4023; 
-                border: 1px solid #3c2f2f; border-radius: 6px; color: #f1e1c1; 
-                padding: 6px; cursor: pointer; font-size: 12px; text-align: center; 
+            #tw-build-lista { margin: 8px 0; }
+            .tw-build-item { 
+                display: flex; align-items: center; justify-content: flex-start;
+                margin: 3px 0; padding: 3px; background: #3a2f23; border: 1px solid #654321;
+                border-radius: 4px; cursor: grab;
             }
-            .tw-build-btn.on { background: #2e7d32 !important; }
-            .tw-build-btn.off { background: #5c4023 !important; }
-            .tw-build-btn:hover { filter: brightness(1.1); }
+            .tw-build-item.dragging { opacity: 0.5; }
+            .tw-build-label { margin-left: 6px; font-size: 12px; cursor: pointer; }
+            #tw-build-btn-executar {
+                display: block; width: 100%; margin-top: 10px; background: #5c4023; 
+                border: 1px solid #3c2f2f; border-radius: 6px; color: #f1e1c1; 
+                padding: 6px; cursor: pointer; font-size: 12px; text-align: center;
+            }
             #tw-build-painel.ativo { transform: translateX(0); }
         `;
         document.head.appendChild(style);
@@ -74,29 +80,81 @@
     };
 
     const listaContainer = document.createElement("div");
+    listaContainer.id = "tw-build-lista";
     conteudo.appendChild(listaContainer);
 
-    const checkboxes = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const checks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    let ordem = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
+    if (ordem.length === 0) ordem = Object.keys(listaEdificios);
 
-    for (const [cod, nome] of Object.entries(listaEdificios)) {
-        const btn = document.createElement("button");
-        const ativo = !!checkboxes[cod];
-        btn.className = ativo ? "tw-build-btn on" : "tw-build-btn off";
-        btn.textContent = nome;
-        btn.onclick = () => {
-            checkboxes[cod] = !checkboxes[cod];
-            btn.classList.toggle("on", checkboxes[cod]);
-            btn.classList.toggle("off", !checkboxes[cod]);
-            UI.InfoMessage(`${nome} ${checkboxes[cod] ? "ativado" : "desativado"}!`, 2000, checkboxes[cod] ? "success" : "error");
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(checkboxes));
-        };
-        listaContainer.appendChild(btn);
+    // montar lista
+    function montarLista() {
+        listaContainer.innerHTML = "";
+        for (const cod of ordem) {
+            const nome = listaEdificios[cod];
+            const item = document.createElement("div");
+            item.className = "tw-build-item";
+            item.draggable = true;
+            item.dataset.cod = cod;
+
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.checked = !!checks[cod];
+            chk.onchange = () => {
+                checks[cod] = chk.checked;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(checks));
+            };
+
+            const lbl = document.createElement("label");
+            lbl.className = "tw-build-label";
+            lbl.textContent = nome;
+
+            item.appendChild(chk);
+            item.appendChild(lbl);
+            listaContainer.appendChild(item);
+
+            // drag & drop
+            item.addEventListener("dragstart", () => {
+                item.classList.add("dragging");
+            });
+            item.addEventListener("dragend", () => {
+                item.classList.remove("dragging");
+                salvarOrdem();
+            });
+        }
     }
 
-    function executarConstrucao() {
-        if ([...document.querySelectorAll("a.btn.btn-cancel")].filter(a => a.href.includes("action=cancel")).length >= 5) return;
+    function salvarOrdem() {
+        const nova = [...listaContainer.querySelectorAll(".tw-build-item")].map(el => el.dataset.cod);
+        ordem = nova;
+        localStorage.setItem(ORDER_KEY, JSON.stringify(ordem));
+    }
 
-        for (let cod of Object.keys(checkboxes).filter(c => checkboxes[c])) {
+    listaContainer.addEventListener("dragover", e => {
+        e.preventDefault();
+        const dragging = listaContainer.querySelector(".dragging");
+        const after = [...listaContainer.querySelectorAll(".tw-build-item:not(.dragging)")].find(el => {
+            const box = el.getBoundingClientRect();
+            return e.clientY < box.top + box.height / 2;
+        });
+        if (after) {
+            listaContainer.insertBefore(dragging, after);
+        } else {
+            listaContainer.appendChild(dragging);
+        }
+    });
+
+    montarLista();
+
+    // botão executar
+    const btnExec = document.createElement("button");
+    btnExec.id = "tw-build-btn-executar";
+    btnExec.textContent = "🚀 Construir";
+    btnExec.onclick = executarConstrucao;
+    conteudo.appendChild(btnExec);
+
+    function executarConstrucao() {
+        for (let cod of ordem.filter(c => checks[c])) {
             const botao = [...document.querySelectorAll(`a.btn-build[id^='main_buildlink_${cod}_']`)]
                 .find(b => b.offsetParent !== null && !b.classList.contains('disabled'));
             if (botao) { 
@@ -105,7 +163,4 @@
             }
         }
     }
-
-    setInterval(executarConstrucao, 5000);
 })();
-
